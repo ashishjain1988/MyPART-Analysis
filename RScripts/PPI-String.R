@@ -5,7 +5,7 @@ analyzePPINetwork<-function(geneList,plotName="",ppiEdgeThreshold=400,ppiPValue=
   require(igraph)
   require(influential)
 
-  string_db <- STRINGdb$new(version="11.5", species=9606,score_threshold=ppiEdgeThreshold, input_directory="")
+  string_db <- STRINGdb$new(version="11", species=9606,score_threshold=ppiEdgeThreshold, input_directory="")
   geneMapped <- string_db$map(data.frame(gene=geneList), "gene", removeUnmappedRows = TRUE)
   subnetwork <- string_db$get_subnetwork(geneMapped$STRING_id)
   g<-components(subnetwork)
