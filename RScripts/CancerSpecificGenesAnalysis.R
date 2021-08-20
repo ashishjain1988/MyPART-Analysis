@@ -248,6 +248,7 @@ cor(unlist(tpmGenes[1,]),unlist(tpmGenes[2,]))
 
 ####################Plot Gene expression Dashboard##########
 genes<-c("GNRHR","SPINK6","KCNJ8","MMP9","CALCA","CALCB","CALCR","GAST","GHRHR","AVPR1B","TPH1","DAPK2","IL5","RET","SLC6A2","ASCL1","NOTCH1","NEUROD1")
+#genes<-c("GNRHR","ASCL1")
 geneExp<-getGeneExpressionBoxplot(genes=genes)
 depmapCrispr<-getGeneEffectsInDepMap(genes=genes)
 # i2dashboard(
@@ -259,7 +260,7 @@ depmapCrispr<-getGeneEffectsInDepMap(genes=genes)
 plotsList<-list()
 for(gene in genes)
 {
-  p<-plotly::subplot(ggplotly(geneExp[[gene]]),depmapCrispr[[gene]]$combined,nrows = 1,heights = c(1),titleX=TRUE,titleY = TRUE,margin = 0.08)
+  p<-plotly::subplot(ggplotly(geneExp[[gene]]),depmapCrispr[[gene]]$combined,nrows = 1,widths = c(0.4,0.6),heights = c(1),titleX=TRUE,titleY = TRUE,margin = 0.08)
   plotsList[[gene]]<-p
   # dashboard %<>% i2dash::add_page(
   #   page = gene,
@@ -274,7 +275,7 @@ for(gene in genes)
   #                         page = gene,
   #                         title = "Dependenacy Map using DepMap CRISPR-Cas9 data")
 }
-getMAFDashboard(MAFfilePath = NULL,plotList = plotsList,outputFileTitle = "Cancer Specific Genes",outputFilePath=parent,outputFileName = "/EndocrineSubgroupResults/CancerSpecificGenes.html")
+getMAFDashboard(MAFfilePath = NULL,plotList = plotsList,outputFileTitle = "Cancer Specific Genes",outputFilePath=paste0(parent,"/EndocrineSubgroupResults/"),outputFileName = "CancerSpecificGenes.html")
 
 # dashboard %>% assemble(file = paste0(parent,"MyDashboard.Rmd"), pages = genes)
 # rmarkdown::render(paste0(parent,"MyDashboard.Rmd"),
@@ -339,6 +340,9 @@ getGeneEffectsInDepMap<-function(genes=NULL,depMapVersion=NULL,groupBySubtypes=F
   # pedDepMapDataInfo <- pedDepMapDataInfo[pedDepMapDataInfo$Class_for_Manuscript == "Pediatric",]
   crisprData<-eh[["EH5358"]]#depmap::depmap_crispr()
   metaData<-eh[["EH5362"]]#depmap::depmap_metadata()
+  geneExpDataDepMap<-eh[["EH5360"]]
+  cnvDataDepMap<-eh[["EH5359"]]
+  mutationCallsDepMap<-eh[["EH5361"]]
 
   #t<-data.frame(crisprData %>% dplyr::filter(depmap_id %in% pedDepMapDataInfo$DepMap_ID))
   t<-data.frame(crisprData)
@@ -352,26 +356,42 @@ getGeneEffectsInDepMap<-function(genes=NULL,depMapVersion=NULL,groupBySubtypes=F
     d1 <- merge(d,metaData,by="depmap_id",all.x=TRUE,all.y=FALSE) %>% dplyr::select(depmap_id,gene_name,primary_disease,subtype_disease,dependency,cell_line.x,cell_line_name)
     d1$subtype_disease[is.na(d1$subtype_disease)]<-d1$primary_disease[is.na(d1$subtype_disease)]
     medianDep<-d1 %>% group_by(primary_disease) %>% summarise(Mean=mean(dependency),Median=median(dependency))
+
+    d2 <- merge(d1,geneExpDataDepMap[geneExpDataDepMap$gene_name %in% gene,],by="depmap_id",all.x=TRUE,all.y=FALSE) %>% dplyr::select(depmap_id,gene_name.x,primary_disease,subtype_disease,dependency,rna_expression,cell_line.x,cell_line_name)
     #print(paste0(genes,"-",round(min(medianDep$Median),digits = 2)))
-    g<-ggplot2::ggplot(d1,ggplot2::aes(x=primary_disease,y=dependency))+
+    d3<- merge(d2,mutationCallsDepMap[mutationCallsDepMap$gene_name %in% gene,],by="depmap_id",all.x=TRUE,all.y=FALSE) %>% dplyr::select(depmap_id,gene_name.x,primary_disease,subtype_disease,dependency,rna_expression,cell_line.x,cell_line_name,is_deleterious,is_tcga_hotspot,is_cosmic_hotspot)
+    d3$color[d3$is_deleterious==TRUE]<-"blue"
+    d3$color[d3$is_tcga_hotspot == TRUE]<-"red"
+    d3$color[d3$is_cosmic_hotspot == TRUE]<-"red"
+    d3$color[is.na(d3$color)]<-"black"
+    d3$size<-ifelse(d3$rna_expression >=log(5+1),"high","low")
+    colorName<-unique(d3$color)
+    g<-ggplot2::ggplot(d3,ggplot2::aes(x=primary_disease,y=dependency))+
       ggplot2::theme_classic(base_size = 10) +
       ggplot2::theme(text=ggplot2::element_text(face = "bold"),axis.text = ggplot2::element_text(size = 10),
                      axis.title = ggplot2::element_text(size = 15,face = "bold"),legend.background = ggplot2::element_rect(colour = "black")) +
       ggplot2::geom_boxplot()+
-      ggplot2::geom_point(ggplot2::aes(label=cell_line_name,label2=subtype_disease),size=0.5)+
+      ggplot2::geom_point(ggplot2::aes(text=sprintf("CellLine: %s<br>Subtype: %s<br>Primary: %s<br>Log2(TPM+1): %s<br>Dependency: %s", cell_line_name, subtype_disease,primary_disease,rna_expression,dependency),
+                                       color=color,size=size))+
+      ggplot2::scale_size_manual(values=c(2.2,1)) +
+      ggplot2::scale_color_manual(values=colorName) +
+      ggplot2::guides(color="none") +
+      ggplot2::theme(legend.position='none') +
+      #ggplot2::geom_point(ggplot2::aes())+
       #ggplot2::geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=0.5, notch=FALSE)+
       ggplot2::labs(x="", y = "Normalized Dependency Score") +
       ggplot2::geom_hline(yintercept=-1, linetype="dashed", color = "red") +
       #geom_dotplot(binaxis='y', stackdir='center',dotsize = 0.5) +
       ggplot2::coord_flip()
-    ggly <- plotly::ggplotly(g)
+    ggly <- plotly::ggplotly(g,tooltip="text")
     # add hover info
-    hoverinfo <- with(d1, paste0("CellLine: ", cell_line_name, "</br></br>",
-                                 "Subtype: ", subtype_disease, "</br>",
-                                 "Primary: ", primary_disease, "</br>",
-                                 "Dependency: ", dependency))
-    ggly$x$data[[1]]$text <- hoverinfo
-    ggly$x$data[[1]]$hoverinfo <- c("text", "boxes")
+    # hoverinfo <- with(d3, paste0("CellLine: ", cell_line_name, "</br></br>",
+    #                              "Subtype: ", subtype_disease, "</br>",
+    #                              "Primary: ", primary_disease, "</br>",
+    #                              "Log2(TPM+1): ", rna_expression, "</br>",
+    #                              "Dependency: ", dependency))
+    # ggly$x$data[[1]]$text <- hoverinfo
+    # ggly$x$data[[1]]$hoverinfo <- c("text", "boxes")
 
     g1<-ggplot2::ggplot(d1,aes(x=dependency)) +
       ggplot2::theme_classic(base_size = 10) +
