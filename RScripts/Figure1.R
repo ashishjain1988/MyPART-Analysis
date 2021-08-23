@@ -49,7 +49,7 @@ ha = HeatmapAnnotation(
              TumorSite=c("Metastasis"="turquoise","Primary Site"="brown","Recurrence"="black")
              #cluster = col_cluster
   ),
-  annotation_name_gp =  gpar(fontsize = 12),
+  annotation_name_gp =  gpar(fontsize = 14,fontface = 2),
   annotation_legend_param = list(title_gp = gpar(fontsize = 15, fontface = 2),labels_gp = gpar(fontsize = 12))
 )
 
@@ -63,14 +63,39 @@ cheatmap <- ComplexHeatmap::Heatmap(hm_data,
                                     cluster_columns = TRUE,
                                     clustering_distance_columns = "euclidean",
                                     clustering_method_columns = "complete",
+                                    row_names_gp = gpar(fontsize = 14,fontface = 2),
+                                    #column_names_gp = gpar(fontsize = 14,fontface = 2),
                                     show_heatmap_legend = F
                                     ) # Turning off to control the placement
 pdf(paste0(parent,"PCsSampleClustering-Subtypes-All.pdf"),width = 14,height = 7)
 ComplexHeatmap::draw(cheatmap, show_annotation_legend = TRUE)
 dev.off()
 
-
 ###########Figure 1B###################
+f<-data.frame(Diagnosis=as.numeric(as.factor(features$New.Diagnosis)))
+f$Sex<-as.numeric(as.factor(features$Sex))
+f$Race<-as.numeric(as.factor(features$Race))
+f$Age<-(features$Age)
+cormatrix<-round(cor(pcaData[,1:5],f, method = "spearman",use = "na.or.complete"),2)
+cheatmap <- ComplexHeatmap::Heatmap(t(cormatrix),
+                                    col=colorRamp2(seq(-1, 1, length.out = 20),
+                                                   rev(colorRampPalette(brewer.pal(9, "PuOr"))(20))),
+                                    cell_fun = function(j, i, x, y, w, h, col) { # add text to each grid
+                                      grid.text(t(cormatrix)[i, j], x, y,gp=gpar(fontsize = 20,fontface = 2))
+                                    },
+                                    bottom_annotation = NULL,
+                                    show_column_names=T,
+                                    column_names_rot = 45,
+                                    cluster_rows = T,
+                                    cluster_columns = F,
+                                    row_names_gp = gpar(fontsize = 18,fontface = 2),
+                                    column_names_gp = gpar(fontsize = 18,fontface = 2),
+                                    show_heatmap_legend = FALSE)
+pdf(paste0(parent,"PCsFeaturesCorrelation.pdf"),width = 10,height = 8)
+draw(cheatmap, show_annotation_legend = TRUE)
+dev.off()
+
+###########Figure 1C###################
 parent<-"/Users/jaina13/myPART/AllSamplesPipeliner/"
 o<-load(file= paste0("/Users/jaina13/myPART/AllSamplesPipeliner/EndocrineSubgroupResults/CancerSpecificGenes/","cancerSpecificGenes-TPM.rda"))
 drugTargets<-read.table(paste0(parent,"CancerSpecificGenes/DrugBankTargets-Format.tsv"),header = TRUE,sep = "\t")
@@ -111,7 +136,7 @@ g<-ggplot(csGenes, aes(fill=isDrug, x=(Tissue))) +
   xlab("")
 ggsave(paste0(parent,"EndocrineSubgroupResults/cancerSpecificGenesBarplot-DrugTarget-AllSamples.pdf"),plot = g,height = 8,width = 10)
 
-###########Figure 1C [Expression Boxplots]###################
+###########Figure 1D [Expression Boxplots]###################
 o2<-load(file= paste0("/Users/jaina13/myPART/AllSamplesPipeliner/EndocrineSubgroupResults/CancerSpecificGenes/cancerSpecificGenes-TPM.rda"))
 #genes<-c("GNRHR","SPINK6","TPH1","CELA2A","KCNJ6","F5","GHRHR")
 gene<-"TPH1"
@@ -123,7 +148,7 @@ f$samples<-row.names(f)
 final_data <- sqldf::sqldf("SELECT * FROM d LEFT OUTER JOIN f where d.variable == samples")
 g<-ggplot(final_data,aes(x=New.Diagnosis,y=value))+
   theme_classic(base_size = 10) +
-  theme(text=element_text(face = "bold",colour = "black"),title = element_text(size = 16),axis.text = element_text(size = 15,colour = "black"),axis.title = element_text(size = 15,face = "bold"),legend.background = element_rect(colour = "black")) +
+  theme(text=element_text(face = "bold",colour = "black"),title = element_text(size = 16),axis.text = element_text(size = 20,colour = "black"),axis.title = element_text(size = 20,face = "bold"),legend.background = element_rect(colour = "black")) +
   #theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.2)) +
   theme(plot.title = element_text(hjust = 0.5))+
   geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=1, notch=FALSE)+
@@ -170,7 +195,7 @@ plotsLists<-list()
   #print(paste0(genes,"-",round(min(medianDep$Median),digits = 2)))
   g<-ggplot2::ggplot(d1,aes(x=primary_disease,y=dependency))+
     ggplot2::theme_classic(base_size = 10) +
-    ggplot2::theme(text=element_text(face = "bold"),axis.text = element_text(size = 15,colour = "black"),axis.title = element_text(size = 15,face = "bold"),legend.background = element_rect(colour = "black")) +
+    ggplot2::theme(text=element_text(face = "bold"),axis.text = element_text(size = 20,colour = "black"),axis.title = element_text(size = 20,face = "bold"),legend.background = element_rect(colour = "black")) +
     ggplot2::geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=1, notch=FALSE)+
     #ggplot2::geom_point(size=1.5)+
     #ggplot2::guides(size="none") +
