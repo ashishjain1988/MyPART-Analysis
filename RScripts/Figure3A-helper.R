@@ -1,4 +1,23 @@
-### Cretaes matrix for oncoplot from maf file
+diagnosisColorRNASeq <- c("#78DD9E","#A54EE1","#D2B4C8","#D7815D","#87D2DC","#BCE25A","#D5DAA9","#DC6DBF","#8688D5")
+names(diagnosisColorRNASeq)<-c("Adrenocortical carcinoma","Anaplastic thyroid carcinoma","Medullary thyroid carcinoma","Neuroendocrine-small intestine","Neuroendocrine-pancreas","Neuroendocrine-lung","Papillary thyroid carcinoma","Pheochromocytoma","Normal")
+
+diagnosisColorDNASeq <- c("#78DD9E","#A54EE1","#D2B4C8","#D7815D","#D5DAA9","#DC6DBF","#8688D5")
+names(diagnosisColorDNASeq)<-c("Adrenocortical carcinoma","Anaplastic thyroid carcinoma","Medullary thyroid carcinoma","Neuroendocrine","Papillary thyroid carcinoma","Pheochromocytoma","Normal")
+
+tissueColor<-c("#DC5ECD","#806AD9","#D2DC98","#DA6074","#D49555","#CDE5D5","#B5C1DF","#D3ABAB","#73D9AC","#9E3DE7","#69D1DE","#D298D3","#688DD0","#85E66D","#D4DE54")
+names(tissueColor)<-c("Adrenal" ,"Colon","Kidney","Liver","Lung","Lymph Node","Neck","Ovary","Pancreas","Pelvis","Scalp","Small Intestine","Spinal Cord","Stomach","Thyroid")
+
+tissueColorDNASeq<-c("#DC5ECD","#806AD9","#D2DC98","#DA6074","#D49555","#CDE5D5","#B5C1DF","#D3ABAB","#73D9AC","#9E3DE7","#69D1DE","#D298D3","#688DD0","#85E66D","#D4DE54","#799D74","#9E3DE7")
+names(tissueColorDNASeq)<-c("Adrenal" ,"Colon","Kidney","Liver","Lung","Lymph Node","Neck","Ovary","Pancreas","Pelvis","Scalp","Intestine","Spinal Cord","Stomach","Thyroid","Rectum","Ileum")
+
+tumorSiteColor<-c("Metastasis"="black","Primary Site"="#BB70CB","Recurrence"="#B8D97B")
+genderColor<-c("Male"="turquoise","Female"="brown")
+raceColor<-c("White"="#B35806","Unknown"="#FDBC6B","Other"="black","Black or African American"="#E3E4EF","Native Hawaiian or Other Pacific Islander"="#8D81B6","Asian"="blue")
+getAgeColor<-function(ageVector){colorRamp2(c(0,max(ageVector,na.rm = T)), c("white","blue"))}
+getTMB500Color<-function(TMBValues){colorRamp2(c(0,max(TMBValues,na.rm = T)), c("white","red"))}
+
+
+### Creates matrix for oncoplot from maf file
 ### Adapted from maftools: https://github.com/PoisonAlien/maftools/blob/master/R/oncomatrix.R
 createOncoMatrix = function(m, g = NULL, chatty = TRUE, add_missing = FALSE){
 

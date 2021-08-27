@@ -8,7 +8,7 @@ library(maftools)
 ####MAF Object with both SNVs and CNVs##############
 o<-load(file = paste0("/Users/jaina13/myPART/WGSData/CNVs/DriverGenes/driverGenesByCancer.rda"))
 #CNVs<-rbind(l1$`Neuroendocrine-small.intestine`,l1$`Neuroendocrine-pancreas`,l1$`Neuroendocrine-lung`)
-CNVs<-l1$Pheochromocytoma
+CNVs<-l1$Adrenocortical.carcinoma
 CNVs$RTNo<-unlist(lapply(as.character(CNVs$sample), function(x){unlist(str_split(x,pattern = "_"))[2]}))
 custom.cn.data = data.frame(Gene = CNVs$gene,Sample_name = CNVs$RTNo,CN = CNVs$driver,stringsAsFactors = FALSE)
 custom.cn.data$CN[custom.cn.data$CN == "DEL"]<-"Del"
@@ -16,7 +16,7 @@ custom.cn.data$CN[custom.cn.data$CN == "AMP"]<-"Amp"
 custom.cn.data$CN[custom.cn.data$CN == "PARTIAL_AMP"]<-"Amp"
 custom.cn.data<-custom.cn.data[!(custom.cn.data$Gene %in% c("HLA-A","HLA-B","HLA-C")),]
 o1<-load(file = paste0("/Users/jaina13/myPART/WESData/Pipeliner_somaticpairs/merged_somatic/SNVsResults-new.rda"))
-wesSNVs<-l1$Pheochromocytoma
+wesSNVs<-l1$Adrenocortical.carcinoma
 wesSNVs@data$Tumor_Sample_Barcode<-unlist(lapply(as.character(wesSNVs@data$Tumor_Sample_Barcode), function(x){unlist(str_split(x,pattern = "_"))[3]}))
 #wesSNVs@clinical.data$Tumor_Sample_Barcode<-unlist(lapply(as.character(wesSNVs@clinical.data$Tumor_Sample_Barcode), function(x){unlist(str_split(x,pattern = "_"))[3]}))
 #head(custom.cn.data)
@@ -31,7 +31,7 @@ mutRTMap<-data.frame(Gene=mutatedGenes,RTNo=RTNo)
 o1<-load(file= paste0("/Users/jaina13/myPART/AllSamplesPipeliner/EndocrineSubgroupResults/CancerSpecificGenes/cancerSpecificGenes-TPM.rda"))
 tpmValuesFull<-tpmValuesFull1
 tpmValuesFull$GeneName<-row.names(tpmValuesFull)#mapping$GeneName
-cancer <- "Pheochromocytoma"#"Neuroendocrine"#"Medullary thyroid carcinoma"#"Adrenocortical carcinoma"#
+cancer <- "Adrenocortical carcinoma"#"Neuroendocrine"#"Medullary thyroid carcinoma"#"Pheochromocytoma"#
 ###Get the cancer-specific genes from the RData
 cancerSpecificGenes1<-(cellSpecificGenesOutput %>% dplyr::filter(Group %in% "Tissue-Enriched") %>% dplyr::filter(grepl(cancer,Tissue)))$Gene
 ###Genes from co-expressed gene modules
@@ -154,7 +154,7 @@ fungin_anno <- fungin_annotate(fungin_query, maf=mafObject, min_mutated_samples 
 mynetworkplot <- fungin_plot(fungin_anno,fillVar = "Expression")
 #mynetworkplot <- mynetworkplot + theme(plot.margin = unit(c(1,1,1,1), "cm")) +
 #mynetworkplot_int <-fungin_plot_interactive(fungin_anno,fill_var = "Expression")
-ggsave(filename = paste0("/Users/jaina13/myPART/AllSamplesPipeliner/EndocrineSubgroupResults/Pheochromocytoma_PPI_ZScore_csGenes_700.pdf"), plot=mynetworkplot, width=12, height=10)
+ggsave(filename = paste0("/Users/jaina13/myPART/AllSamplesPipeliner/EndocrineSubgroupResults/ACC_PPI_ZScore_csGenes_700.pdf"), plot=mynetworkplot, width=12, height=10)
 # networkplot_image <- file.path(outdir, "maf_with_rna_ZScore.pdf")
 # ggsave(filename = paste0(mywd,"PPINetwork/ACC_PPI_ZScore_csGenes_900.pdf"), plot=mynetworkplot, width=12, height=8)
 

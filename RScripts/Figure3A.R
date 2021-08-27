@@ -33,7 +33,8 @@ featuresFilt$Tissue<-tools::toTitleCase(featuresFilt$`anatomical.location.-.MyPA
 featuresFilt$SampleType<-tools::toTitleCase(featuresFilt$`sample.type.-.MyPART.Tumor.Pathologies`)
 featuresFilt$Age<-featuresFilt$`age.at.sample.collection.-.Path.Rpt`
 
-maf.plus.cn = read.maf(maf = wesSNVs@data[ wesSNVs@data$Hugo_Symbol== "HTR1D",],cnTable = custom.cn.data,clinicalData = featuresFilt,verbose = FALSE)
+#maf.plus.cn = read.maf(maf = wesSNVs@data[ wesSNVs@data$Hugo_Symbol== "HTR1D",],cnTable = custom.cn.data,clinicalData = featuresFilt,verbose = FALSE)
+maf.plus.cn = read.maf(maf = wesSNVs@data,clinicalData = featuresFilt,verbose = FALSE)
 # summary<-maf.plus.cn@gene.summary
 # summary$Altertotal<-summary$MutatedSamples+summary$CNV_total
 # summary$Altertotal[summary$MutatedSamples != 0 & summary$CNV_total == 0]<-summary$MutatedSamples[summary$MutatedSamples != 0 & summary$CNV_total == 0]
@@ -51,21 +52,25 @@ maf.plus.cn = read.maf(maf = wesSNVs@data[ wesSNVs@data$Hugo_Symbol== "HTR1D",],
 # maftools::oncoplot(maf = maf.plus.cn,genes = genes,legend_height = 10,legendFontSize = 2,annotationFontSize = 2,clinicalFeatures = c("PrimaryLocation","Tissue","SampleType"),gene_mar = 10,barcode_mar = 10)
 # dev.off()
 
-# sample_annotation_data<-maf.plus.cn@clinical.data[,c("Tumor_Sample_Barcode","cancer/tumor.name.-.MyPART.Tumor.Pathologies","SampleType","Tissue","Age","TMB.(Mut/Mb).-.MyPART.TSO.500s")]
-# colnames(sample_annotation_data)<-c("Tumor_Sample_Barcode","Diagnosis","SampleType","Tissue","Age","TMB_TSO500")
-sample_annotation_data<-maf.plus.cn@clinical.data[,c("Tumor_Sample_Barcode","cancer/tumor.name.-.MyPART.Tumor.Pathologies","SampleType","Tissue","Age")]
-colnames(sample_annotation_data)<-c("Tumor_Sample_Barcode","Diagnosis","SampleType","Tissue","Age")
+source("/Users/jaina13/myPART/MyPART-Analysis/RScripts/Figure3A-helper.R")
+sample_annotation_data<-maf.plus.cn@clinical.data[,c("Tumor_Sample_Barcode","cancer/tumor.name.-.MyPART.Tumor.Pathologies","SampleType","Tissue","Age","TMB.(Mut/Mb).-.MyPART.TSO.500s")]
+colnames(sample_annotation_data)<-c("Tumor_Sample_Barcode","Diagnosis","SampleType","Tissue","Age","TMB_TSO500")
 sample_annotation_data$Age <-as.numeric(sample_annotation_data$Age)
-#sample_annotation_data$TMB_TSO500<-as.numeric(sample_annotation_data$TMB_TSO500)
-sample_annotation_colors <- get_clinical_colors(sample_annotation_data)
+sample_annotation_data$TMB_TSO500<-as.numeric(sample_annotation_data$TMB_TSO500)
+sample_annotation_colors <- list(Diagnosis=diagnosisColorDNASeq[sample_annotation_data$Diagnosis],SampleType=tumorSiteColor[sample_annotation_data$SampleType],Tissue=tissueColorDNASeq[sample_annotation_data$Tissue],Age=getAgeColor(sample_annotation_data$Age),TMB_TSO500 = getTMB500Color((sample_annotation_data$TMB_TSO500)))#get_clinical_colors(sample_annotation_data)
+# sample_annotation_data<-maf.plus.cn@clinical.data[,c("Tumor_Sample_Barcode","cancer/tumor.name.-.MyPART.Tumor.Pathologies","SampleType","Tissue","Age")]
+# colnames(sample_annotation_data)<-c("Tumor_Sample_Barcode","Diagnosis","SampleType","Tissue","Age")
+# sample_annotation_colors <- list(Diagnosis=diagnosisColorDNASeq[sample_annotation_data$Diagnosis],SampleType=tumorSiteColor[sample_annotation_data$SampleType],Tissue=tissueColorDNASeq[sample_annotation_data$Tissue],Age=getAgeColor(sample_annotation_data$Age))#get_clinical_colors(sample_annotation_data)
+
 g<-make_oncoplot(maf.plus.cn,show_sample_names = FALSE,clin_data = sample_annotation_data,clin_data_colors = sample_annotation_colors,ngene_max = 50)
-pdf(paste0(mywd,"CNVs-ALL-Endocrines.pdf"),width = 14,height = 12)
+#pdf(paste0(mywd,"CNVs-ALL-Endocrines.pdf"),width = 14,height = 12)
+pdf(paste0(mywd,"SNVs-ALL-Endocrines.pdf"),width = 14,height = 12)
 #ComplexHeatmap::draw(g, show_annotation_legend = TRUE)
 draw(onco_base_default, show_annotation_legend = TRUE)
 dev.off()
 
 
-source("/Users/jaina13/myPART/MyPART-Analysis/RScripts/Figure3A-helper.R")
+
 make_oncoplot <- function(maf.filtered, cohort_freq_thresh = 0.01,ngene_max=25, auto_adjust_threshold=T,
                           oncomat_only=F, show_sample_names=NULL,
                           clin_data=NULL, clin_data_colors=NULL,
@@ -88,7 +93,8 @@ make_oncoplot <- function(maf.filtered, cohort_freq_thresh = 0.01,ngene_max=25, 
                          #mutation_count=maf.filtered@gene.summary$total + maf.filtered@gene.summary$CNV_total,
                          stringsAsFactors = F)
 
-  frac_mut <- frac_mut %>% dplyr::filter(!(Hugo_Symbol %in% c("HLA-A","HLA-B","HLA-C","HTR1D")))
+  #frac_mut <- frac_mut %>% dplyr::filter(!(Hugo_Symbol %in% c("HLA-A","HLA-B","HLA-C","HTR1D")))
+  frac_mut <- frac_mut %>% dplyr::filter(!(Hugo_Symbol %in% c("HLA-A","HLA-B","HLA-C")))
 
   target_frac = sort(frac_mut$frac_mut, decreasing = T)[min(ngene_max,nrow(frac_mut))]
   if (auto_adjust_threshold) {

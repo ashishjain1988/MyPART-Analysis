@@ -7,6 +7,7 @@ library(dplyr)
 
 ###########Figure 1A###################
 source("~/myPART/MyPART-Analysis/RScripts/helperFunctions.R")
+source("~/myPART/MyPART-Analysis/RScripts/Figure3A-helper.R")
 parent<-"~/myPART/AllSamplesPipeliner/EndocrineSubgroupResults/"
 l1<-load(file = paste0(parent,"vsdNormalizedCounts.rda"))
 features<-featuresFilt
@@ -23,15 +24,17 @@ pca_exp<-pcaData[,1:5]
 featuresFilt<-features#features[grepl("Normal|Gastrointestinal",features$New.Diagnosis),]
 hm_data<-as.matrix(t(pca_exp[row.names(featuresFilt),]))
 column_annotations = HeatmapAnnotation(df = featuresFilt[,c("Tissue","New.Diagnosis","Age","Sex","Race","TumorSite")])
-col_age = colorRamp2(c(0,max(featuresFilt$Age,na.rm = T)), c("white","blue"))
+col_age = getAgeColor(featuresFilt$Age)#colorRamp2(c(0,max(featuresFilt$Age,na.rm = T)), c("white","blue"))
 #col_rin = colorRamp2(c(0,max(featuresFilt$RIN)), c("white","yellow"))
-n <- distinctColorPalette(length(levels(as.factor(featuresFilt$Tissue))))
-names(n)<-(levels(as.factor(featuresFilt$Tissue)))
-col_tissue <-n[featuresFilt$Tissue]
+#n <- distinctColorPalette(length(levels(as.factor(featuresFilt$Tissue))))
+#names(n)<-(levels(as.factor(featuresFilt$Tissue)))
+col_tissue <-tissueColor[featuresFilt$Tissue]
 
-n1 <- distinctColorPalette(length(levels(as.factor(featuresFilt$New.Diagnosis))))
-names(n1)<-(levels(as.factor(featuresFilt$New.Diagnosis)))
-col_disease <-n1[featuresFilt$New.Diagnosis]
+#n1 <- distinctColorPalette(length(levels(as.factor(featuresFilt$New.Diagnosis))))
+#names(n1)<-(levels(as.factor(featuresFilt$New.Diagnosis)))
+#n1 <- c("#78DD9E","#A54EE1","#D2B4C8","#D7815D","#87D2DC","#BCE25A","#D5DAA9","#DC6DBF","#8688D5")
+#names(n1)<-unique(featuresFilt$New.Diagnosis)
+col_disease <-diagnosisColorRNASeq[featuresFilt$New.Diagnosis]
 
 df<-featuresFilt[,c("Tissue","New.Diagnosis","Age","Sex","Race","TumorSite")]
 colnames(df)<-c("Tissue","Diagnosis","Age","Sex","Race","TumorSite")
@@ -43,10 +46,10 @@ ha = HeatmapAnnotation(
   col = list(Tissue = col_tissue,
              Diagnosis = col_disease,#c("Normal" = "black","Adrenocortical carcinoma" = "red"),#col_cluster,#c("Adrenocortical carcinoma" = "red", "Normal" = "black", "Carcinoid tumor" = "blue","Gastrointestinal stromal tumor"="brown"),
              Age = col_age,
-             Sex = c("Male"="turquoise","Female"="brown"),
+             Sex = genderColor,#c("Male"="turquoise","Female"="brown"),
              #RIN = col_rin,
-             Race =c("White"="#B35806","Unknown"="#FDBC6B","Other"="black","Black or African American"="#E3E4EF","Native Hawaiian or Other Pacific Islander"="#8D81B6","Asian"="blue"),
-             TumorSite=c("Metastasis"="turquoise","Primary Site"="brown","Recurrence"="black")
+             Race =raceColor,#c("White"="#B35806","Unknown"="#FDBC6B","Other"="black","Black or African American"="#E3E4EF","Native Hawaiian or Other Pacific Islander"="#8D81B6","Asian"="blue"),
+             TumorSite=tumorSiteColor#c("Metastasis"="turquoise","Primary Site"="brown","Recurrence"="black")
              #cluster = col_cluster
   ),
   annotation_name_gp =  gpar(fontsize = 14,fontface = 2),

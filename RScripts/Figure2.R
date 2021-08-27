@@ -56,6 +56,7 @@ dev.off()
 
 
 ###########Figure 2B##################
+source("/Users/jaina13/myPART/MyPART-Analysis/RScripts/Figure3A-helper.R")
 parent<-"/Users/jaina13/myPART/AllSamplesPipeliner/EndocrineSubgroupResults/WGCNA/"
 l<-load(file = paste0(parent,"MyPART-networkConstruction-merged.RData"))
 l1<-load(file = paste0(parent,"MyPART-dataInput.RData"))
@@ -66,10 +67,13 @@ MEs<-MEs[row.names(datTraits),]
 colnames(MEs)<-names(moduleNames[moduleNames == colnames(MEs)])
 colorh1 <-colorNames[paste0("ME",moduleColors)]
 
+groupColors<-diagnosisColorDNASeq[as.character(datTraits$Diagnosis)]
 ##Module heatmap and eigengene
 library(randomcoloR)
-colors <- c("#80D9D8","#D98B69","#B7DE9C","#D6CDCD","#AFE456","#C457D3","#B096D3")#distinctColorPalette(length(unique(datTraits$Diagnosis)))#c("orange","tan")#
-names(colors)<-unique(datTraits$Diagnosis)
+#colors <- c("#80D9D8","#D98B69","#B7DE9C","#D6CDCD","#AFE456","#C457D3","#B096D3")#distinctColorPalette(length(unique(datTraits$Diagnosis)))#c("orange","tan")#
+#names(colors)<-unique(datTraits$Diagnosis)
+colors<-unique(groupColors)
+names(colors)<-unique(names(groupColors))
 ###Generate a legend for type of samples in the data###########
 png(filename=paste0(parent,"eigenGeneLegend-Diagnosis.png"), width = 1600 , height = 1600,units = "px",res = 300)
 plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
@@ -77,7 +81,6 @@ legend("topleft", legend =names(colors), pch=15, pt.cex=3, cex=1.5, bty='n',col 
 mtext("Diagnosis", at=0.2, cex=2)
 dev.off()
 #################################################################
-groupColors<-colors[as.character(datTraits$Diagnosis)]
 #colo<-c("brown","cyan","red","turquoise","yellow","salmon")#unique(colorh1)##c("grey60")#
 colo<-c("M1","M3","M4","M5","M15","M16")
 #datTraits$RTNo<-unlist(lapply(row.names(datTraits), function(x){unlist(str_split(x,pattern = "_"))[2]}))
@@ -167,7 +170,7 @@ p<-ggplot(top5TermsAllDF,aes(x=reorder(description,-c(1:20)),y=enrichmentRatio,f
   #guides(fill = "none")+
   #scale_y_continuous(breaks = 1:8, labels = c(1:3,"Break",7,"Break",12:13)) +
   scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 50)) +
-  theme(text=element_text(size = 15),plot.title = element_text(hjust = 0.5,size = 20),axis.text = element_text(size=18,colour = "black"),axis.title = element_text(size=20,colour = "black"),panel.grid.major = element_blank(),panel.grid.minor = element_blank())+
+  theme(text=element_text(size = 15),legend.title = element_text(size=18,colour = "black",face = "bold"),legend.text = element_text(size=18,colour = "black"),plot.title = element_text(hjust = 0.5,size = 20),axis.text = element_text(size=18,colour = "black"),axis.title = element_text(size=20,colour = "black"),panel.grid.major = element_blank(),panel.grid.minor = element_blank())+
   #labs(x='', y = bquote(-Log[10]~'(FDR)'))
   labs(x='', y = "Enrichment Ratio")
   #facet_wrap(~Module,ncol = 4)
