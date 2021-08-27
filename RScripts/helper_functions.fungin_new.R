@@ -278,8 +278,9 @@ fungin_plot <- function(fungin_graph, marker_size=40, fillVar="logFC",savename=N
   plotdata <- ggnetwork(fungin_graph,scale = F, stringsAsFactors=F)
   edgesize <- 1.5
   shape_vals <- c(21, 22, 23, 24, 25)
-  shape_vals<-shape_vals[1:length(sort(unique(plotdata$mutated)))]
-  names(shape_vals) <- sort(unique(plotdata$mutated))
+  names(shape_vals)<-c("Mutated in 1 sample","Mutated in 2 to 4 samples","Mutated in 5 to 9 samples","Mutated in 10 or more samples","No data")
+  shape_vals<-shape_vals[unique(plotdata$mutated)]
+  #names(shape_vals) <- sort(unique(plotdata$mutated))
   #print(unique(plotdata$mutated))
 
   interaction_colors <- c("Other"="grey70", "Inhibition"="blue2","Activation"="gold")
@@ -389,11 +390,9 @@ fungin_plot <- function(fungin_graph, marker_size=40, fillVar="logFC",savename=N
     labs(color = "Mutation Type\n(outline color)",
          fill = "Gene Expression\n(Z-Score)",
          shape = "Mutations") +
-    guides(shape=guide_legend(
-      #keywidth=0.1,
-      keyheight=0.5,
-      default.unit="inch")
-    ) +
+    guides(shape=guide_legend(keyheight=0.5,default.unit="inch"),#,title.theme = element_text(size=14,face = "bold"),label.theme = element_text(size=12)),
+           #color=guide_legend(title.theme = element_text(size=14,face = "bold"),label.theme = element_text(size=12)),
+           ) +
     scale_fill_distiller(palette = mypal,na.value = "grey80", limit=color_limits, n.breaks=5, direction = -1) +
     # scale_fill_gradientn(colors=fc_colors,values=fc_colors.values,na.value = "grey80") +
     scale_alpha_manual(values=alpha_vals, guide="none")
@@ -413,6 +412,8 @@ fungin_plot <- function(fungin_graph, marker_size=40, fillVar="logFC",savename=N
     # geom_nodetext(aes(label = name,color=isTFColor))+
     scale_colour_manual(values=labelNamesColors) +
     labs(color = "Is TF\n(label color)") +
+    #guides(color=guide_legend(title.theme = element_text(size=14,face = "bold"),label.theme = element_text(size=12))) +
+    #theme(legend.title = element_text(size=14,face = "bold"),legend.text = element_text(size=12))+
     #ggtitle(paste0(length(V(fungin_graph))," genes plotted")) +
     theme_blank()
 
