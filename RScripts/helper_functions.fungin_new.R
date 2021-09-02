@@ -390,8 +390,10 @@ fungin_plot <- function(fungin_graph, marker_size=40, fillVar="logFC",savename=N
     labs(color = "Mutation Type\n(outline color)",
          fill = "Gene Expression\n(Z-Score)",
          shape = "Mutations") +
-    guides(shape=guide_legend(keyheight=0.5,default.unit="inch"),#,title.theme = element_text(size=14,face = "bold"),label.theme = element_text(size=12)),
-           #color=guide_legend(title.theme = element_text(size=14,face = "bold"),label.theme = element_text(size=12)),
+    guides(#title.theme = element_text(size=14,face = "bold"),label.theme = element_text(size=12),
+           color=guide_legend(title.theme = element_text(size=14,face = "bold"),label.theme =  element_text(size=12),order = 1),
+           shape=guide_legend(title.theme = element_text(size=14,face = "bold"),label.theme =  element_text(size=12),order = 2,keyheight=0.5,default.unit="inch"),
+           fill=guide_colorbar(title.theme = element_text(size=14,face = "bold"),label.theme =  element_text(size=12),order = 3)
            ) +
     scale_fill_distiller(palette = mypal,na.value = "grey80", limit=color_limits, n.breaks=5, direction = -1) +
     # scale_fill_gradientn(colors=fc_colors,values=fc_colors.values,na.value = "grey80") +
@@ -402,7 +404,7 @@ fungin_plot <- function(fungin_graph, marker_size=40, fillVar="logFC",savename=N
     new_scale_color()+
     #geom_mark_hull(expand=0.01,aes(color=as.factor(membership),fill=(membership)))+#
     #ggalt::geom_encircle(expand=0.01,aes(color=as.factor(membership))) +
-    geom_nodetext_repel(aes( label = name,color=isTFColor),#, colour=isTFColor,
+    geom_nodetext_repel(aes( label = name,color = isTFColor),#, colour=isTFColor,
                         # geom_nodetext(aes( label = vertex.names, color=logFC ),
                         # fontface = "bold",size=1, color="steelblue") +
                         # fontface = "bold",size=1, show.legend = F) +
@@ -412,7 +414,8 @@ fungin_plot <- function(fungin_graph, marker_size=40, fillVar="logFC",savename=N
     # geom_nodetext(aes(label = name,color=isTFColor))+
     scale_colour_manual(values=labelNamesColors) +
     labs(color = "Is TF\n(label color)") +
-    #guides(color=guide_legend(title.theme = element_text(size=14,face = "bold"),label.theme = element_text(size=12))) +
+    guides(color=guide_legend(title.theme = element_text(size=14,face = "bold"),label.theme = element_text(size=12),order = 3)) +
+    #guides(color="none") +
     #theme(legend.title = element_text(size=14,face = "bold"),legend.text = element_text(size=12))+
     #ggtitle(paste0(length(V(fungin_graph))," genes plotted")) +
     theme_blank()
