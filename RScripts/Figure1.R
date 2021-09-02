@@ -36,15 +36,16 @@ col_tissue <-tissueColor[featuresFilt$Tissue]
 #names(n1)<-unique(featuresFilt$New.Diagnosis)
 col_disease <-diagnosisColorRNASeq[featuresFilt$New.Diagnosis]
 
-df<-featuresFilt[,c("Tissue","New.Diagnosis","Age","Sex","Race","TumorSite")]
-colnames(df)<-c("Tissue","Diagnosis","Age","Sex","Race","TumorSite")
+df<-featuresFilt[,c("New.Diagnosis","Tissue","Age","Sex","Race","TumorSite")]
+colnames(df)<-c("Diagnosis","Tissue","Age","Sex","Race","TumorSite")
 #col_tissue <- distinctColorPalette()
 ha = HeatmapAnnotation(
   #df = features[,c(5,6,7,13,15)],
   #df = featuresFilt[,c(3,4,5,6,13,7)],
   df = df,
-  col = list(Tissue = col_tissue,
-             Diagnosis = col_disease,#c("Normal" = "black","Adrenocortical carcinoma" = "red"),#col_cluster,#c("Adrenocortical carcinoma" = "red", "Normal" = "black", "Carcinoid tumor" = "blue","Gastrointestinal stromal tumor"="brown"),
+  col = list(
+             Diagnosis = col_disease,
+             Tissue = col_tissue,#c("Normal" = "black","Adrenocortical carcinoma" = "red"),#col_cluster,#c("Adrenocortical carcinoma" = "red", "Normal" = "black", "Carcinoid tumor" = "blue","Gastrointestinal stromal tumor"="brown"),
              Age = col_age,
              Sex = genderColor,#c("Male"="turquoise","Female"="brown"),
              #RIN = col_rin,
@@ -52,10 +53,27 @@ ha = HeatmapAnnotation(
              TumorSite=tumorSiteColor#c("Metastasis"="turquoise","Primary Site"="brown","Recurrence"="black")
              #cluster = col_cluster
   ),
+  #annotation_height = unit(rep(6,6), rep("mm",6)),
+  #height = unit(40,"mm"),
   annotation_name_gp =  gpar(fontsize = 14,fontface = 2),
-  annotation_legend_param = list(title_gp = gpar(fontsize = 15, fontface = 2),labels_gp = gpar(fontsize = 12))
+  #annotation_legend_param = list(title_gp = gpar(fontsize = 15, fontface = 2),labels_gp = gpar(fontsize = 12)),
+  #annotation_height = unit(rep(2,6), "cm"),
+  height=unit(5*0.4,'inches'),
+  annotation_legend_param=list(labels_gp=gpar(fontsize = 12),
+                               #grid_height=unit(3,"mm"),
+                               #grid_width=unit(3,"mm"),
+                               # ncol = 5,
+                               nrow = 4,
+                               legend_direction = "vertical",
+                               title_gp=gpar(fontsize=15,
+                                             # legend_height=unit(0.3,"npc"),
+                                             fontface="bold"))
+  #annotation_height = c(TumorSite = unit(8, "mm"),Diagnosis=unit(8, "mm"),Age=unit(8, "mm"),Sex=unit(8, "mm"),Race=unit(8, "mm"),TumorSite=unit(8, "mm")), height = unit(48, "mm")
 )
+# ha@height<-unit(48,"mm")
+# ha@anno_size<-unit(rep(8,6), "mm")
 
+#ha1<-re_size(ha,height = 40)
 cheatmap <- ComplexHeatmap::Heatmap(hm_data,
                                     col=colorRamp2(seq(-max(abs(pca_exp), na.rm = T), max(abs(pca_exp), na.rm = T), length.out = 20),
                                                    rev(colorRampPalette(brewer.pal(9, "PuOr"))(20))),
@@ -68,10 +86,12 @@ cheatmap <- ComplexHeatmap::Heatmap(hm_data,
                                     clustering_method_columns = "complete",
                                     row_names_gp = gpar(fontsize = 14,fontface = 2),
                                     #column_names_gp = gpar(fontsize = 14,fontface = 2),
-                                    show_heatmap_legend = F
+                                    show_heatmap_legend = F,
+                                    heatmap_height = unit(100,"mm")
                                     ) # Turning off to control the placement
-pdf(paste0(parent,"PCsSampleClustering-Subtypes-All.pdf"),width = 14,height = 7)
-ComplexHeatmap::draw(cheatmap, show_annotation_legend = TRUE)
+
+pdf(paste0(parent,"PCsSampleClustering-Subtypes-All.pdf"),width = 7,height = 8)
+ComplexHeatmap::draw(cheatmap, show_annotation_legend = TRUE,annotation_legend_side = "bottom")
 dev.off()
 
 ###########Figure 1B###################
@@ -91,8 +111,8 @@ cheatmap <- ComplexHeatmap::Heatmap(t(cormatrix),
                                     column_names_rot = 45,
                                     cluster_rows = T,
                                     cluster_columns = F,
-                                    row_names_gp = gpar(fontsize = 18,fontface = 2),
-                                    column_names_gp = gpar(fontsize = 18,fontface = 2),
+                                    row_names_gp = gpar(fontsize = 20,fontface = 2),
+                                    column_names_gp = gpar(fontsize = 20,fontface = 2),
                                     show_heatmap_legend = FALSE)
 pdf(paste0(parent,"PCsFeaturesCorrelation.pdf"),width = 10,height = 8)
 draw(cheatmap, show_annotation_legend = TRUE)
@@ -139,10 +159,129 @@ g<-ggplot(csGenes, aes(fill=isDrug, x=(Tissue))) +
   xlab("")
 ggsave(paste0(parent,"EndocrineSubgroupResults/cancerSpecificGenesBarplot-DrugTarget-AllSamples.pdf"),plot = g,height = 8,width = 10)
 
+###########Figure 1D [cancer-specific genes HeatMap]###################
+csGenesDrugBank<-csGenes[csGenes$isDrug =="Yes",]
+tpmValuescsGenes<-tpmValuesFull1[csGenesDrugBank$Gene,]
+tpmValuescsGenes <- log2(tpmValuescsGenes+1)
+# r<-data.frame(t(apply(tpmValuescsGenes, 1, scale)))
+# colnames(r)<-colnames(tpmValuescsGenes)
+# tpmValuescsGenes<-r
+
+features$Tissue <- tools::toTitleCase(features$Tissue)
+features$TumorSite <- tools::toTitleCase(features$TumorSite)
+featuresFilt<-features#features[grepl("Normal|Gastrointestinal",features$New.Diagnosis),]
+featuresFilt[grepl("Normal",featuresFilt$New.Diagnosis),]$New.Diagnosis<-"Normal"
+hm_data<-as.matrix((tpmValuescsGenes[,row.names(featuresFilt)]))
+column_annotations = HeatmapAnnotation(df = featuresFilt[,c("Tissue","New.Diagnosis","Age","Sex","Race","TumorSite")])
+col_age = getAgeColor(featuresFilt$Age)#colorRamp2(c(0,max(featuresFilt$Age,na.rm = T)), c("white","blue"))
+col_tissue <-tissueColor[featuresFilt$Tissue]
+col_disease <-diagnosisColorRNASeq[featuresFilt$New.Diagnosis]
+
+df<-featuresFilt[,c("New.Diagnosis","Tissue","Age","Sex","Race","TumorSite")]
+colnames(df)<-c("Diagnosis","Tissue","Age","Sex","Race","TumorSite")
+ha = HeatmapAnnotation(
+  df = df,
+  col = list(Diagnosis = col_disease,#c("Normal" = "black","Adrenocortical carcinoma" = "red"),#col_cluster,#c("Adrenocortical carcinoma" = "red", "Normal" = "black", "Carcinoid tumor" = "blue","Gastrointestinal stromal tumor"="brown"),
+             Tissue = col_tissue,
+             Age = col_age,
+             Sex = genderColor,#c("Male"="turquoise","Female"="brown"),
+             #RIN = col_rin,
+             Race =raceColor,#c("White"="#B35806","Unknown"="#FDBC6B","Other"="black","Black or African American"="#E3E4EF","Native Hawaiian or Other Pacific Islander"="#8D81B6","Asian"="blue"),
+             TumorSite=tumorSiteColor#c("Metastasis"="turquoise","Primary Site"="brown","Recurrence"="black")
+             #cluster = col_cluster
+  ),
+  annotation_name_gp =  gpar(fontsize = 14,fontface = 2),
+  #annotation_legend_param = list(title_gp = gpar(fontsize = 15, fontface = 2),labels_gp = gpar(fontsize = 12)),
+  annotation_legend_param=list(labels_gp = gpar(fontsize = 12),title_gp = gpar(fontsize = 15, fontface = 2),
+                               #grid_height=unit(3,"mm"),
+                               #grid_width=unit(3,"mm"),
+                               # ncol = 5,
+                               nrow = 5,
+                               legend_direction = "vertical")
+  #annotation_height = unit(rep(2,6), "cm")
+  #simple_anno_size = unit(1, "cm"), height = unit(6, "cm")
+)
+
+#ha1<-re_size(ha,height = 15,annotation_height = unit(8, "mm"))
+#ha_row = rowAnnotation(foo = anno_mark(at = c(1,3:8,26,28,31,45:46), labels = row.names(tpmValuescsGenes)[c(1,3:8,26,28,31,45:46)]))
+#subgroup = sample(letters[1:3], 100, replace = TRUE, prob = c(1, 5, 10))
+library(ggplotify)
+rg = range(hm_data)
+panel_fun = function(index, nm) {
+  pushViewport(viewport(xscale = rg, yscale = c(0, 2)))
+  grid.rect()
+  #grid.xaxis(gp = gpar(fontsize = 8))
+  #grid.boxplot(hm_data[index, ], pos = 1, direction = "horizontal")
+  #png_obj <- image_read(paste0(parent,"TPH1-expBoxplot.pdf"))
+  #png_obj <- image_trim(png_obj)
+  #grid.raster(png_obj,width=unit(1,"npc"), height=unit(1,"npc"))
+  #print(index)
+  gene <- row.names(hm_data[index, ,drop=FALSE])
+  d<-reshape2::melt(tpmValuesFull1[gene, ])
+  d$variable <- colnames(tpmValuescsGenes)
+  f<-featuresFilt[,c("RTNo","PrimaryCancerTissue","New.Diagnosis","TumorSite")]
+  #f$New.Diagnosis[f$New.Diagnosis == "Adrenocortical carcinoma-recurrence"]<-"Adrenocortical carcinoma-metastasis"
+  f$samples<-row.names(f)
+  final_data <- sqldf::sqldf("SELECT * FROM d LEFT OUTER JOIN f where d.variable == samples")
+  #print(final_data)
+  g<-ggplot(final_data,aes(x=New.Diagnosis,y=value,fill = New.Diagnosis,color = New.Diagnosis))+
+    theme_classic(base_size = 10) +
+    scale_fill_manual(breaks=unique(names(col_disease)),values=diagnosisColorRNASeq[unique(names(col_disease))])+
+    scale_color_manual(breaks=unique(names(col_disease)),values=diagnosisColorRNASeq[unique(names(col_disease))])+
+    #theme(text=element_text(face = "bold",colour = "black"),title = element_text(size = 16),axis.text = element_text(size = 20,colour = "black"),axis.title = element_text(size = 20,face = "bold"),legend.background = element_rect(colour = "black")) +
+    #theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.2)) +
+    theme(plot.title = element_text(hjust = 0.5,size = 6),axis.text = element_text(size = 4,colour = "black"),axis.title = element_text(size = 5,colour = "black"))+
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank())+
+    geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=1)+
+    #geom_point(size=1.5)+
+    guides(fill="none",color="none") +
+    labs(x="", y = "TPM") +
+    ggtitle(paste0(gene))
+    #scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 30))+
+    #theme(plot.margin = unit(c(0.5,1,0.5,0.5), "cm")) +
+    #coord_flip()
+  grid.draw(as.grob(g))
+  popViewport()
+}
+genes<-which(row.names(hm_data) %in% c("TPH1","NEUROD1","CALCA","DAPK2","MMP9","SLC6A2"))
+#names(genes)<-paste0("Gene",1:6)
+anno = anno_zoom(align_to = as.list(genes), which = "row", panel_fun = panel_fun,
+                 size = unit(2, "cm"), gap = unit(1, "cm"), width = unit(4, "cm"))
+
+cheatmap <- ComplexHeatmap::Heatmap(hm_data,
+                                    col=colorRamp2(seq(-max(abs(tpmValuescsGenes), na.rm = T), max(abs(tpmValuescsGenes), na.rm = T), length.out = 20),
+                                                   rev(colorRampPalette(brewer.pal(9, "PuOr"))(20))),
+                                    bottom_annotation = ha,#column_annotations,
+                                    show_column_names=FALSE,
+                                    #column_names_rot = 45,
+                                    cluster_rows = FALSE,
+                                    cluster_columns = TRUE,
+                                    clustering_distance_columns = "euclidean",
+                                    clustering_method_columns = "complete",
+
+                                    row_names_side = "left",
+                                    show_row_names = FALSE,
+                                    right_annotation = rowAnnotation(foo1=anno),
+                                    row_names_gp = gpar(fontsize = 10,fontface = 2),
+                                    #left_annotation =ha_row,
+                                    left_annotation = rowAnnotation(Reason = csGenesDrugBank$Tissue, col=list(Reason=diagnosisColorRNASeq[unique(csGenesDrugBank$Tissue)]), annotation_width = unit(0.3, "mm"), show_annotation_name=F,show_legend=FALSE),
+
+                                    #column_names_gp = gpar(fontsize = 14,fontface = 2),
+                                    show_heatmap_legend = F
+) # Turning off to control the placement
+
+pdf(paste0(parent,"PCsSampleClustering-csGenes.pdf"),width = 12,height = 7)
+ComplexHeatmap::draw(cheatmap, show_annotation_legend = TRUE)
+dev.off()
+
+
+
+
+
 ###########Figure 1D [Expression Boxplots]###################
 o2<-load(file= paste0("/Users/jaina13/myPART/AllSamplesPipeliner/EndocrineSubgroupResults/CancerSpecificGenes/cancerSpecificGenes-TPM.rda"))
 #genes<-c("GNRHR","SPINK6","TPH1","CELA2A","KCNJ6","F5","GHRHR")
-gene<-"TPH1"
+gene<-"TH"
 tpmvaluesGene<-tpmValuesFull1[gene,]
 d<-reshape2::melt(tpmvaluesGene)
 f<-features[,c("RTNo","PrimaryCancerTissue","New.Diagnosis","TumorSite")]
