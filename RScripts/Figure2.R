@@ -2,9 +2,10 @@ library(WGCNA)
 
 ################Supplementary Figure################
 ####################Module Heatmap######################################
-library(WGCNA)
+#library(WGCNA)
 # The following setting is important, do not omit.
 # options(stringsAsFactors = FALSE);
+parent<-"/Users/jaina13/myPART/AllSamplesPipeliner/EndocrineSubgroupResults/WGCNA/"
 lnames = load(file = paste0(parent,"MyPART-dataInput.RData"));
 lnames = load(file = paste0(parent,"MyPART-networkConstruction-merged.RData"));
 # Define numbers of genes and samples
@@ -21,7 +22,7 @@ colorNames<-paste0("M",c(1:ncol(MEs)))
 names(colorNames)<-moduleNames
 
 datTraits<-datTraits[row.names(datExpr),]
-moduleTraitCor = cor(MEs, datTraits[,c(5,6,13:14,10:12,15:16)], use = "p");#c(5:6,10:12)
+moduleTraitCor = cor(MEs, datTraits[,c(5,6,13:14,10:12,15:17)], use = "p");#c(5:6,10:12)
 #moduleTraitCor = cor(MEs, datTraits[,c(5:8,14)], use = "p");
 moduleTraitPvalue = corPvalueStudent(moduleTraitCor, nSamples);
 # adjmoduleTraitPvalue = apply(moduleTraitPvalue,2,function(x){
@@ -37,7 +38,7 @@ dim(textMatrix) = dim(moduleTraitCor)
 #png(filename=paste0(parent,"moduleSignificanceHeatmap.png"), width = 4500 , height = 3500,units = "px",res = 300)
 pdf(paste0(parent,"moduleSignificanceHeatmap.pdf"),height = 10,width = 9)
 WGCNA::labeledHeatmap(Matrix = moduleTraitCor,
-                      xLabels = names(datTraits[,c(5,6,13:14,10:12,15:16)]),
+                      xLabels = names(datTraits[,c(5,6,13:14,10:12,15:17)]),
                       #yLabels = modulesName,
                       yLabels = names(MEs),
                       ySymbols = names(MEs),
@@ -159,8 +160,13 @@ top5TermsAllDF$description[6]<-paste0(top5TermsAllDF$description[6]," ")
 top5TermsAllDF$description <- tools::toTitleCase(top5TermsAllDF$description)
 #data[6,"V3"]<-data[6,"V3"]-5
 #data[7,"V3"]<-data[7,"V3"]-2
+#top5TermsAllDF$Module<-as.factor(top5TermsAllDF$Module,levels=c("M4", "M5", "M15","M16"))
 p<-ggplot(top5TermsAllDF,aes(x=reorder(description,-c(1:20)),y=enrichmentRatio,fill=Module))+
   geom_bar(stat = 'identity', position = position_dodge(width=1))+
+  #scale_fill_manual(labels = c("M4", "M5", "M15","M16"), values = )+
+  #scale_fill_discrete(breaks=levels(top5TermsAllDF$Module)) +
+  scale_fill_manual(breaks=c("M4", "M5", "M15","M16"),
+                    values=c("M4"="#B6DD79","M5"="#DA9B9D","M15"="#9DD2D3","M16"="#B16FD6"))+
   coord_flip()+
   theme_bw()+
   # geom_hline(yintercept = 3.9,linetype="solid") +
