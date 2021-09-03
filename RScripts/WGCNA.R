@@ -259,7 +259,7 @@ MEs = orderMEs(MEs0)
 #datTraits = read.csv(paste0(parent,"traits.txt"),row.names = 1,header = T,sep = "\t")
 datTraits<-datTraits[row.names(datExpr),]
 #datTraits$AdrenalGland<-as.numeric(datTraits$Tissue == "adrenal")
-moduleTraitCor = cor(MEs, datTraits[,c(5,6,13,10:12,14)], use = "p");#c(5:6,10:12)
+moduleTraitCor = cor(MEs, datTraits[,c(5,6,13:14,10:12,15:16)], use = "p");#c(5:6,10:12)
 #moduleTraitCor = cor(MEs, datTraits[,c(5:8,14)], use = "p");
 moduleTraitPvalue = corPvalueStudent(moduleTraitCor, nSamples);
 # adjmoduleTraitPvalue = apply(moduleTraitPvalue,2,function(x){
@@ -274,7 +274,7 @@ par(mar = c(6, 8.5, 3, 3));
 # Display the correlation values within a heatmap plot
 png(filename=paste0(parent,"moduleSignificanceHeatmap.png"), width = 4500 , height = 3500,units = "px",res = 300)
 WGCNA::labeledHeatmap(Matrix = moduleTraitCor,
-                      xLabels = names(datTraits[,c(5,6,13,10:12,14)]),
+                      xLabels = names(datTraits[,c(5,6,13:14,10:12,15:16)]),
                       #yLabels = modulesName,
                       yLabels = names(MEs),
                       ySymbols = names(MEs),
@@ -338,7 +338,7 @@ cheatmap <- ComplexHeatmap::Heatmap(hm_data,
                                     column_names_rot = 45,
                                     cluster_rows = FALSE,
                                     show_heatmap_legend = F) # Turning off to control the placement
-pdf(paste0(parent,"PCsSampleClustering-Subtypes-All-L.pdf"))
+pdf(paste0(parent,"moduleSignificanceHeatmap-WithAnnotations.pdf"),width = 12,height = 7)
 draw(cheatmap, show_annotation_legend = TRUE)
 dev.off()
 
