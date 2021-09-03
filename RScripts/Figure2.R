@@ -54,6 +54,57 @@ WGCNA::labeledHeatmap(Matrix = moduleTraitCor,
                       main = paste("Module-Trait Significance"))
 dev.off()
 
+#####################Heatmap
+library(ComplexHeatmap)
+library(circlize)
+library(RColorBrewer)
+library(randomcoloR)
+
+hm_data<-as.matrix(t(MEs[row.names(featuresFilt),]))
+column_annotations = HeatmapAnnotation(df = featuresFilt[,c("Tissue","New.Diagnosis","Age","Sex","Race","TumorSite")])
+col_age = getAgeColor(featuresFilt$Age)#colorRamp2(c(0,max(featuresFilt$Age,na.rm = T)), c("white","blue"))
+col_tissue <-tissueColor[featuresFilt$Tissue]
+col_disease <-diagnosisColorDNASeq[featuresFilt$New.Diagnosis]
+
+df<-featuresFilt[,c("Tissue","New.Diagnosis","Age","Sex","Race","TumorSite")]
+colnames(df)<-c("Tissue","Diagnosis","Age","Sex","Race","TumorSite")
+#col_tissue <- distinctColorPalette()
+ha = HeatmapAnnotation(
+  #df = features[,c(5,6,7,13,15)],
+  #df = featuresFilt[,c(3,4,5,6,13,7)],
+  df = df,
+  col = list(Tissue = col_tissue,
+             Diagnosis = col_disease,#c("Normal" = "black","Adrenocortical carcinoma" = "red"),#col_cluster,#c("Adrenocortical carcinoma" = "red", "Normal" = "black", "Carcinoid tumor" = "blue","Gastrointestinal stromal tumor"="brown"),
+             Age = col_age,
+             Sex = genderColor,
+             #RIN = col_rin,
+             Race =raceColor,
+             TumorSite=tumorSiteColor
+             #cluster = col_cluster
+  ),
+  annotation_name_gp =  gpar(fontsize = 14,fontface = 2),
+  #annotation_legend_param = list(title_gp = gpar(fontsize = 15, fontface = 2),labels_gp = gpar(fontsize = 12)),
+  annotation_legend_param=list(labels_gp = gpar(fontsize = 12),title_gp = gpar(fontsize = 15, fontface = 2),
+                               #grid_height=unit(3,"mm"),
+                               #grid_width=unit(3,"mm"),
+                               # ncol = 5,
+                               nrow = 4,
+                               legend_direction = "vertical")
+)
+
+cheatmap <- ComplexHeatmap::Heatmap(hm_data,
+                                    col=colorRamp2(seq(-max(abs(hm_data), na.rm = T), max(abs(hm_data), na.rm = T), length.out = 20),
+                                                   rev(colorRampPalette(brewer.pal(9, "RdBu"))(20))),
+                                    bottom_annotation = ha,#column_annotations,
+                                    show_column_names=F,
+                                    column_names_rot = 45,
+                                    cluster_rows = FALSE,
+                                    heatmap_height = unit(130,"mm"),
+                                    row_names_gp = gpar(fontsize = 14,fontface = 2),
+                                    show_heatmap_legend = F) # Turning off to control the placement
+pdf(paste0(parent,"moduleSignificanceHeatmap-WithAnnotations.pdf"),width = 10,height = 10)
+draw(cheatmap, show_annotation_legend = TRUE,annotation_legend_side = "bottom")
+dev.off()
 
 
 ###########Figure 2B##################
