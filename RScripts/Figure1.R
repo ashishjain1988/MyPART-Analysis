@@ -119,10 +119,10 @@ draw(cheatmap, show_annotation_legend = TRUE)
 dev.off()
 
 ###########Figure 1C###################
-parent<-"/Users/jaina13/myPART/AllSamplesPipeliner/"
+#parent<-"/Users/jaina13/myPART/AllSamplesPipeliner/"
 o<-load(file= paste0("/Users/jaina13/myPART/AllSamplesPipeliner/EndocrineSubgroupResults/CancerSpecificGenes/","cancerSpecificGenes-TPM.rda"))
-drugTargets<-read.table(paste0(parent,"CancerSpecificGenes/DrugBankTargets-Format.tsv"),header = TRUE,sep = "\t")
-drugBankGeneMapping<-read.table(paste0(parent,"CancerSpecificGenes/genesDrugBank.tsv"),header = TRUE,sep = "\t")
+drugTargets<-read.table(paste0("/Users/jaina13/myPART/AllSamplesPipeliner/","CancerSpecificGenes/DrugBankTargets-Format.tsv"),header = TRUE,sep = "\t")
+drugBankGeneMapping<-read.table(paste0("/Users/jaina13/myPART/AllSamplesPipeliner/","CancerSpecificGenes/genesDrugBank.tsv"),header = TRUE,sep = "\t")
 drugTargetsMap<-merge(x=drugTargets,y=drugBankGeneMapping,by.x="targetID",by.y="gene_claim_name",all.x=TRUE,all.y=FALSE)
 #teGenes<-getTissueSpecificGenes(rdaFilePath = "~/myPART/TissueEnrichCombineExpression.rda")
 proteinCodingGenes<-read.table(paste0("~/myPART/FusionAnalysis/hg38.proteinCodingGenes.Ensembl.txt"),sep = "\t",header = T)
@@ -230,7 +230,7 @@ panel_fun = function(index, nm) {
     scale_color_manual(breaks=unique(names(col_disease)),values=diagnosisColorRNASeq[unique(names(col_disease))])+
     #theme(text=element_text(face = "bold",colour = "black"),title = element_text(size = 16),axis.text = element_text(size = 20,colour = "black"),axis.title = element_text(size = 20,face = "bold"),legend.background = element_rect(colour = "black")) +
     #theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.2)) +
-    theme(plot.title = element_text(hjust = 0.5,size = 6),axis.text = element_text(size = 4,colour = "black"),axis.title = element_text(size = 5,colour = "black"))+
+    theme(plot.title = element_text(hjust = 0.5,size = 8,face = "bold"),axis.text = element_text(size = 4,colour = "black"),axis.title = element_text(size = 5,colour = "black"))+
     theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank())+
     geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=1)+
     #geom_point(size=1.5)+
@@ -243,7 +243,7 @@ panel_fun = function(index, nm) {
   grid.draw(as.grob(g))
   popViewport()
 }
-genes<-which(row.names(hm_data) %in% c("TPH1","NEUROD1","CALCA","DAPK2","MMP9","SLC6A2"))
+genes<-which(row.names(hm_data) %in% c("GNRHR","TPH1","NEUROD1","CALCB","MMP9","SLC6A2","DRD2"))
 #names(genes)<-paste0("Gene",1:6)
 anno = anno_zoom(align_to = as.list(genes), which = "row", panel_fun = panel_fun,
                  size = unit(2, "cm"), gap = unit(1, "cm"), width = unit(4, "cm"))
@@ -275,33 +275,80 @@ ComplexHeatmap::draw(cheatmap, show_annotation_legend = TRUE)
 dev.off()
 
 
-
+##############GO Term barplot for cancer-specific genes##########
+#parent<-""
+modulesGOTerms<-c("Pheochromocytoma","Papillary_thyroid_carcinoma","Anaplastic_thyroid_carcinoma")
+names(modulesGOTerms)<-c("Pheochromocytoma","Papillary thyroid carcinoma","Anaplastic thyroid carcinoma")
+#####Read top 5 GO terms of each of the four modules
+top5TermsAll<-list()
+maxTerms<-5
+for(co in modulesGOTerms)
+{
+  data<-read.table(paste0(parent,"CancerSpecificGenes/EnrichmentAnalysis/Project_",co,"_geneontology_Biological_Process_noRedundant/enrichment_results_",co,"_geneontology_Biological_Process_noRedundant.txt"),sep = "\t",header = T)
+  enrichmentRes<-data[,c(1,2,7,9)] %>% dplyr::filter(FDR <= 0.05)
+  top5terms<-enrichmentRes[order(enrichmentRes$enrichmentRatio,decreasing = TRUE),][1:min(nrow(enrichmentRes),maxTerms),]
+  top5terms$Diagnosis<-names(modulesGOTerms[modulesGOTerms == co])
+  top5TermsAll[[co]]<-top5terms
+}
+top5TermsAllDF<-do.call("rbind",top5TermsAll)
+top5TermsAllDF$description[6]<-paste0(top5TermsAllDF$description[6]," ")
+top5TermsAllDF$description <- tools::toTitleCase(top5TermsAllDF$description)
+#data[6,"V3"]<-data[6,"V3"]-5
+#data[7,"V3"]<-data[7,"V3"]-2
+#top5TermsAllDF$Module<-as.factor(top5TermsAllDF$Module,levels=c("M4", "M5", "M15","M16"))
+p<-ggplot(top5TermsAllDF,aes(x=reorder(description,-c(1:nrow(top5TermsAllDF))),y=enrichmentRatio,fill=Diagnosis))+
+  geom_bar(stat = 'identity', position = position_dodge(width=1))+
+  #scale_fill_manual(labels = c("M4", "M5", "M15","M16"), values = )+
+  #scale_fill_discrete(breaks=levels(top5TermsAllDF$Module)) +
+  scale_fill_manual(breaks=c("Anaplastic thyroid carcinoma", "Papillary thyroid carcinoma","Pheochromocytoma"),
+                    values=c("Anaplastic thyroid carcinoma"="#A54EE1","Papillary thyroid carcinoma"="#D5DAA9","Pheochromocytoma"="#DC6DBF"))+
+  coord_flip()+
+  theme_bw()+
+  # geom_hline(yintercept = 3.9,linetype="solid") +
+  # geom_hline(yintercept = 4.1,linetype="solid") +
+  # geom_hline(yintercept = 5.9,linetype="solid") +
+  # geom_hline(yintercept = 6.1,linetype="solid") +
+  #guides(fill = "none")+
+  #scale_y_continuous(breaks = 1:8, labels = c(1:3,"Break",7,"Break",12:13)) +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 30)) +
+  theme(text=element_text(size = 15),legend.title = element_text(size=18,colour = "black",face = "bold"),legend.text = element_text(size=18,colour = "black"),plot.title = element_text(hjust = 0.5,size = 20),axis.text = element_text(size=18,colour = "black"),axis.title = element_text(size=20,colour = "black"),panel.grid.major = element_blank(),panel.grid.minor = element_blank())+
+  #labs(x='', y = bquote(-Log[10]~'(FDR)'))
+  labs(x='', y = "Enrichment Ratio")
+#facet_wrap(~Module,ncol = 4)
+#ggtitle('Module Top 5 GO Biological Process terms')
+ggsave(paste0(parent,"csGenes.GOterms.pdf"),width = 6.6,height = 3.7,units = "in",scale = 2,p)
 
 
 ###########Figure 1D [Expression Boxplots]###################
 o2<-load(file= paste0("/Users/jaina13/myPART/AllSamplesPipeliner/EndocrineSubgroupResults/CancerSpecificGenes/cancerSpecificGenes-TPM.rda"))
-#genes<-c("GNRHR","SPINK6","TPH1","CELA2A","KCNJ6","F5","GHRHR")
-gene<-"TH"
+#genes<-c("GNRHR","MMP","TPH1","CELA2A","KCNJ6","F5","GHRHR")
+gene<-"NEUROD1"
 tpmvaluesGene<-tpmValuesFull1[gene,]
 d<-reshape2::melt(tpmvaluesGene)
 f<-features[,c("RTNo","PrimaryCancerTissue","New.Diagnosis","TumorSite")]
-f$New.Diagnosis[f$New.Diagnosis == "Adrenocortical carcinoma-recurrence"]<-"Adrenocortical carcinoma-metastasis"
+#f$New.Diagnosis[f$New.Diagnosis == "Adrenocortical carcinoma-recurrence"]<-"Adrenocortical carcinoma-metastasis"
 f$samples<-row.names(f)
 final_data <- sqldf::sqldf("SELECT * FROM d LEFT OUTER JOIN f where d.variable == samples")
-g<-ggplot(final_data,aes(x=New.Diagnosis,y=value))+
+diagnosisColorRNASeq1 <- c("#78DD9E","#A54EE1","#D2B4C8","#D7815D","#87D2DC","#BCE25A","#D5DAA9","#DC6DBF",rep("#8688D5",8))
+names(diagnosisColorRNASeq1)<-c("Adrenocortical carcinoma","Anaplastic thyroid carcinoma","Medullary thyroid carcinoma","Neuroendocrine-small intestine","Neuroendocrine-pancreas","Neuroendocrine-lung","Papillary thyroid carcinoma","Pheochromocytoma","Normal-adrenal","Normal-kidney","Normal-lung","Normal-pancreas","Normal-small intestine","Normal-spinal cord","Normal-stomach","Normal-thyroid")
+col_disease1<-diagnosisColorRNASeq1[f$New.Diagnosis]
+
+g<-ggplot(final_data,aes(x=New.Diagnosis,y=value,fill = New.Diagnosis,color = New.Diagnosis))+
   theme_classic(base_size = 10) +
   theme(text=element_text(face = "bold",colour = "black"),title = element_text(size = 16),axis.text = element_text(size = 20,colour = "black"),axis.title = element_text(size = 20,face = "bold"),legend.background = element_rect(colour = "black")) +
   #theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.2)) +
+  scale_fill_manual(breaks=unique(names(col_disease1)),values=diagnosisColorRNASeq1[unique(names(col_disease))])+
+  scale_color_manual(breaks=unique(names(col_disease1)),values=diagnosisColorRNASeq1[unique(names(col_disease))])+
   theme(plot.title = element_text(hjust = 0.5))+
-  geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=1, notch=FALSE)+
-  geom_point(size=1.5)+
-  guides(size="none") +
+  geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=FALSE)+
+  #geom_point(size=1.5)+
+  guides(size="none",fill="none",color="none") +
   labs(x="", y = "Transcripts Per Million (TPM)") +
-  #ggtitle(paste0("Expression of ",gene))+
+  ggtitle(paste0("Expression of ",gene, "\n(Neuronal Differentiation Factor 1)"))+
   scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 30))+
   theme(plot.margin = unit(c(0.5,1,0.5,0.5), "cm")) +
   coord_flip()
-ggsave(paste0(parent,"EndocrineSubgroupResults/",gene,"-expBoxplot.pdf"),plot = g,height = 10,width = 12)
+ggsave(paste0(parent,"/",gene,"-expBoxplot.pdf"),plot = g,height = 10,width = 12)
 
 ###########Figure 1D [DepMap Boxplots]###################
 require(depmap)
