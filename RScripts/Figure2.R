@@ -195,6 +195,7 @@ plotMat<-function(x, nrgcols=50, rlabels=FALSE, clabels=FALSE, rcols=1, ccols=1,
 ###########Figure 2A##################
 ###########GO Ontology Terms###########
 modulesGOTerms<-c("brown","yellow","salmon","red")
+#modulesGOTerms<-c("#D7815D","#D7815D","#D2B4C8","#DC6DBF")
 names(modulesGOTerms)<-c("M4","M5","M15","M16")
 #####Read top 5 GO terms of each of the four modules
 top5TermsAll<-list()
@@ -217,7 +218,7 @@ p<-ggplot(top5TermsAllDF,aes(x=reorder(description,-c(1:20)),y=enrichmentRatio,f
   #scale_fill_manual(labels = c("M4", "M5", "M15","M16"), values = )+
   #scale_fill_discrete(breaks=levels(top5TermsAllDF$Module)) +
   scale_fill_manual(breaks=c("M4", "M5", "M15","M16"),
-                    values=c("M4"="#B6DD79","M5"="#DA9B9D","M15"="#9DD2D3","M16"="#B16FD6"))+
+                    values=c("M4"="#D7815D","M5"="#D7815D","M15"="#D2B4C8","M16"="#DC6DBF"))+
   coord_flip()+
   theme_bw()+
   # geom_hline(yintercept = 3.9,linetype="solid") +
@@ -285,8 +286,8 @@ gene_sig_cutoff = 0.05
 
 topPathways<-10
 #modules<-c("lightcyan","turquoise","blue","green")
-modulesPathTerms<-c("brown","yellow","red","turquoise","cyan")
-names(modulesPathTerms)<-c("M4","M5","M16","M3","M1")
+modulesPathTerms<-c("brown","yellow","red","turquoise")
+names(modulesPathTerms)<-c("M4","M5","M16","M3")
 #modules<-c("turquoise","cyan","brown","yellow","red")
 all_res <- lapply(modulesPathTerms, FUN=function(x){
   t<-readr::read_tsv(file = paste0(data_folder,"/Project_",x,"_pathway_Reactome/enrichment_results_",x,"_pathway_Reactome.txt"),progress = FALSE)
@@ -310,14 +311,16 @@ plot_all.mod <- add_category_to_dotplot_Webgestalt(enrichment_input, show_n_path
 #plot_all.mod <- add_category_to_dotplot(ck.reactome.all, show_n_path = 100)
 # plot_all.mod <- add_category_to_dotplot(ck.reactome.all, show_n_path = 20)
 
-pdf(file = paste0("/Users/jaina13/myPART/AllSamplesPipeliner/EndocrineSubgroupResults/WGCNA/pathways_by_cluster.both.category.top10.pdf"),width = 24, height=15)
+pdf(file = paste0("/Users/jaina13/myPART/AllSamplesPipeliner/EndocrineSubgroupResults/WGCNA/pathways_by_cluster.both.category.top10-new.pdf"),width = 24, height=15)
 # pdf(file = paste0("pathways_by_cluster.both.category.top_20.pdf"),width = 16, height=6)
 myplot_with_cat <- plot_all.mod[[2]]
 myplot_with_cat <- myplot_with_cat +
   #scale_fill_manual(values=c(up="green3",down="red")) +
   theme_bw() +
-  scale_y_discrete(labels = function(x) stringr::str_wrap(x, width = 50)) +
-  theme(text=element_text(size = 15),plot.title = element_text(hjust = 0.5,size = 20),axis.text = element_text(size=15,colour = "black"),axis.title = element_text(size=20,colour = "black"))
+  scale_y_discrete(labels = function(x) stringr::str_wrap(x, width = 60)) +
+  theme(text=element_text(size = 15),plot.title = element_text(hjust = 0.5,size = 25,face="bold"),axis.text = element_text(size=20,colour = "black"),axis.title = element_text(size=20,colour = "black"))+
+  theme(legend.title=element_text(size=25,face="bold"),legend.text = element_text(size=25,face="bold")) +
+  theme(strip.text = element_text(size = 15, face="bold"))
   #theme(axis.text.x = element_text(angle = 20, hjust = 1))
 print(myplot_with_cat)
 dev.off()
@@ -339,15 +342,18 @@ all_res <- lapply(modulesGOTerms, FUN=function(x){
 names(all_res)<-names(modulesGOTerms)
 
 library(rrvgo)
-go_analysis <- all_res$M1 #read.delim(system.file("extdata/example.txt", package="rrvgo"))
-#go_analysis$description<-tools::toTitleCase(go_analysis$description)
-simMatrix <- calculateSimMatrix(go_analysis$geneSet,orgdb="org.Hs.eg.db",ont="BP",method="Rel")
-minValue<-ifelse(min(go_analysis$FDR[go_analysis$FDR !=0]) < 10e-7,min(go_analysis$FDR[go_analysis$FDR !=0]),10e-7)
-scores <- setNames(-log10(go_analysis$FDR+(minValue)), go_analysis$geneSet)
-reducedTerms <- reduceSimMatrix(simMatrix,scores,threshold=0.7,orgdb="org.Hs.eg.db")
-reducedTerms$term<-tools::toTitleCase(reducedTerms$term)
-reducedTerms$parentTerm<-tools::toTitleCase(reducedTerms$parentTerm)
-pdf(file = paste0(parent,"GOTerms.Treemap.M1.pdf"),width = 10, height=10)
-treemapPlot(reducedTerms,fontsize.labels = 20)
-dev.off()
+for(m in names(modulesGOTerms))
+{
+  go_analysis <- all_res[[m]] #read.delim(system.file("extdata/example.txt", package="rrvgo"))
+  #go_analysis$description<-tools::toTitleCase(go_analysis$description)
+  simMatrix <- calculateSimMatrix(go_analysis$geneSet,orgdb="org.Hs.eg.db",ont="BP",method="Rel")
+  minValue<-ifelse(min(go_analysis$FDR[go_analysis$FDR !=0]) < 10e-7,min(go_analysis$FDR[go_analysis$FDR !=0]),10e-7)
+  scores <- setNames(-log10(go_analysis$FDR+(minValue)), go_analysis$geneSet)
+  reducedTerms <- reduceSimMatrix(simMatrix,scores,threshold=0.7,orgdb="org.Hs.eg.db")
+  reducedTerms$term<-tools::toTitleCase(reducedTerms$term)
+  reducedTerms$parentTerm<-tools::toTitleCase(reducedTerms$parentTerm)
+  pdf(file = paste0(parent,"GOTerms.Treemap.",m,".pdf"),width = 10, height=10)
+  treemapPlot(reducedTerms,fontsize.labels = 20)
+  dev.off()
+}
 
