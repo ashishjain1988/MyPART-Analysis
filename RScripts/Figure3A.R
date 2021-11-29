@@ -11,30 +11,55 @@ custom.cn.data$CN[custom.cn.data$CN == "AMP"]<-"Amp"
 custom.cn.data$CN[custom.cn.data$CN == "PARTIAL_AMP"]<-"Amp"
 #featuresCNV<-features[features$RTNo %in% unique(custom.cn.data$Sample_name),]
 
+###CNVs from Sequenza from WES data
+o<-load(file = paste0("/Users/jaina13/myPART/WESData/new-exome-pipeline-results/CNV/sequenza_out/sequenzaRes-Unfilt.rda"))
+CNVs<-rbind(cn.list.amp$`11_RT00050_W305`,cn.list.amp$`29_RT00142_X646`,cn.list.amp$`19_RT00108_X005`)
+CNVs$RTNo<-unlist(lapply(as.character(CNVs$Sample), function(x){unlist(str_split(x,pattern = "_"))[2]}))
+custom.cn.data = data.frame(Gene = CNVs$gene,Sample_name = CNVs$RTNo,CN = CNVs$Type,stringsAsFactors = FALSE)
+custom.cn.data$CN[custom.cn.data$CN == "Deletion"]<-"Del"
+custom.cn.data$CN[custom.cn.data$CN == "Amplification"]<-"Amp"
+
 # o2<-load(file = "/Users/jaina13/myPART/WGSData/tumor-only-somatic-mafs/filterMAFResults.rda")
 # wgsSNVs<-l1$Adrenocortical.carcinoma
 # wgsSNVs@data$Tumor_Sample_Barcode<-unlist(lapply(as.character(wgsSNVs@data$Tumor_Sample_Barcode), function(x){unlist(str_split(x,pattern = "_"))[2]}))
 # d<-merge(maf.plus.cn@variants.per.sample,sample_annotation_data,by="Tumor_Sample_Barcode")
 
-o1<-load(file = paste0("/Users/jaina13/myPART/WESData/Pipeliner_somaticpairs/merged_somatic/SNVsResults-new.rda"))
+o1<-load(file = paste0("/Users/jaina13/myPART/WESData/new-exome-pipeline-results/merged_somatic_variants/maf-new/SNVsResults-consensus.rda"))
+#o1<-load(file = paste0("/Users/jaina13/myPART/WESData/Pipeliner_somaticpairs/merged_somatic/SNVsResults-new.rda"))
 #wesSNVs<-l1$Adrenocortical.carcinoma
 wesSNVs<-maftools::merge_mafs(list(l1$Adrenocortical.carcinoma,l1$Neuroendocrine.tumor,l1$Pheochromocytoma,l1$Medullary.thyroid.carcinoma,l1$Anaplastic.thyroid.cancer))
-wesSNVs@data$Tumor_Sample_Barcode<-unlist(lapply(as.character(wesSNVs@data$Tumor_Sample_Barcode), function(x){unlist(str_split(x,pattern = "_"))[3]}))
+wesSNVs@data$Tumor_Sample_Barcode<-unlist(lapply(as.character(wesSNVs@data$Tumor_Sample_Barcode), function(x){unlist(str_split(x,pattern = "_"))[2]}))
 #wesSNVs<-read.maf(wesSNVs@data)
 #wesSNVs@clinical.data$Tumor_Sample_Barcode<-unlist(lapply(as.character(wesSNVs@clinical.data$Tumor_Sample_Barcode), function(x){unlist(str_split(x,pattern = "_"))[3]}))
 #head(custom.cn.data)
 library(openxlsx)
-features<-read.xlsx("~/myPART/NGS clinical data for Ashish 4-26-21v2-no_name.xlsx")
-#featuresFilt <- features[features$Subject.Code %in% c(unique(custom.cn.data$Sample_name),unique(wesSNVs@data$Tumor_Sample_Barcode)),]
-featuresFilt <- features[features$Subject.Code %in% unique(custom.cn.data$Sample_name),]
+features<-openxlsx::read.xlsx("~/myPART/NGS clinical data for Ashish 4-26-21v2-no_name.xlsx")
+featuresFilt <- features[features$Subject.Code %in% c(unique(custom.cn.data$Sample_name),unique(wesSNVs@data$Tumor_Sample_Barcode)),]
+#featuresFilt <- features[features$Subject.Code %in% unique(custom.cn.data$Sample_name),]
 featuresFilt$Tumor_Sample_Barcode<-featuresFilt$Subject.Code
 featuresFilt$PrimaryLocation<-tools::toTitleCase(featuresFilt$Location.of.Primary)
 featuresFilt$Tissue<-tools::toTitleCase(featuresFilt$`anatomical.location.-.MyPART.Tumor.Pathologies`)
 featuresFilt$SampleType<-tools::toTitleCase(featuresFilt$`sample.type.-.MyPART.Tumor.Pathologies`)
 featuresFilt$Age<-featuresFilt$`age.at.sample.collection.-.Path.Rpt`
 
+# featuresFilt %>% dplyr::group_by_at(vars(`cancer/tumor.name.-.MyPART.Tumor.Pathologies`)) %>% dplyr::summarize(gene=unique(`Hugo Symbol`),chromosome=unique(Chromosome),start=unique(`Start Position`),end=unique(`End Position`),
+#                                                                                  VariantType =paste(unique(`Variant Type`),collapse = ","),
+#                                                                                  TranscriptChange=paste(unique(`Transcript Change`),collapse = ","),ProteinChange=paste(unique(`Protein Change`),collapse = ","),
+#                                                                                  ExistingAnnotation=paste(unique(`Existing Annotation`),collapse = ","),EffectPredictionSIFT=paste(unique(`Effect Prediction - SIFT`),collapse = ","),
+#                                                                                  EffectPredictionPolyPhen=paste(unique(`Effect Prediction - PolyPhen`),collapse = ","),ClinVar=paste(unique(`Known Effects ClinVar`),collapse = ","),
+#                                                                                  Sample = paste(`Sample ID`,collapse = ","),NumberOfSamples = dplyr::n()) %>% arrange(desc(NumberOfSamples))
+
+lapply(unique(featuresFilt$New.Diagnosis),function(x){
+  f <- featuresFilt[featuresFilt$New.Diagnosis == x,]
+  print(x)
+  print(table(f$Race))
+  #print(sd(as.numeric(f$Age),na.rm=TRUE))
+})
+
 #maf.plus.cn = read.maf(maf = wesSNVs@data[ wesSNVs@data$Hugo_Symbol== "HTR1D",],cnTable = custom.cn.data,clinicalData = featuresFilt,verbose = FALSE)
-maf.plus.cn = read.maf(maf = wesSNVs@data,clinicalData = featuresFilt,verbose = FALSE)
+#maf.plus.cn = read.maf(maf = wesSNVs@data,clinicalData = featuresFilt,verbose = FALSE)
+maf.plus.cn = read.maf(maf = wesSNVs@data,cnTable = custom.cn.data,clinicalData = featuresFilt,verbose = FALSE)
+
 # summary<-maf.plus.cn@gene.summary
 # summary$Altertotal<-summary$MutatedSamples+summary$CNV_total
 # summary$Altertotal[summary$MutatedSamples != 0 & summary$CNV_total == 0]<-summary$MutatedSamples[summary$MutatedSamples != 0 & summary$CNV_total == 0]
@@ -60,11 +85,12 @@ sample_annotation_data$TMB_TSO500<-as.numeric(sample_annotation_data$TMB_TSO500)
 sample_annotation_colors <- list(Diagnosis=diagnosisColorDNASeq[sample_annotation_data$Diagnosis],SampleType=tumorSiteColor[sample_annotation_data$SampleType],Tissue=tissueColorDNASeq[sample_annotation_data$Tissue],Age=getAgeColor(sample_annotation_data$Age),TMB_TSO500 = getTMB500Color((sample_annotation_data$TMB_TSO500)))#get_clinical_colors(sample_annotation_data)
 # sample_annotation_data<-maf.plus.cn@clinical.data[,c("Tumor_Sample_Barcode","cancer/tumor.name.-.MyPART.Tumor.Pathologies","SampleType","Tissue","Age")]
 # colnames(sample_annotation_data)<-c("Tumor_Sample_Barcode","Diagnosis","SampleType","Tissue","Age")
+# sample_annotation_data$Age <-as.numeric(sample_annotation_data$Age)
 # sample_annotation_colors <- list(Diagnosis=diagnosisColorDNASeq[sample_annotation_data$Diagnosis],SampleType=tumorSiteColor[sample_annotation_data$SampleType],Tissue=tissueColorDNASeq[sample_annotation_data$Tissue],Age=getAgeColor(sample_annotation_data$Age))#get_clinical_colors(sample_annotation_data)
 
 g<-make_oncoplot(maf.plus.cn,show_sample_names = FALSE,clin_data = sample_annotation_data,clin_data_colors = sample_annotation_colors,ngene_max = 50)
 #pdf(paste0(mywd,"CNVs-ALL-Endocrines.pdf"),width = 14,height = 12)
-pdf(paste0(mywd,"SNVs-ALL-Endocrines.pdf"),width = 14,height = 12)
+pdf(paste0("/Users/jaina13/myPART/WESData/new-exome-pipeline-results/merged_somatic_variants/maf-new/","SNVs-consensus-SequenzaCNV.pdf"),width = 14,height = 12)
 #ComplexHeatmap::draw(g, show_annotation_legend = TRUE)
 draw(onco_base_default, show_annotation_legend = TRUE)
 dev.off()
@@ -90,11 +116,13 @@ make_oncoplot <- function(maf.filtered, cohort_freq_thresh = 0.01,ngene_max=25, 
   ### Structure info about the fraction of the cohort that has each gene mutated
   frac_mut <- data.frame(Hugo_Symbol=maf.filtered@gene.summary$Hugo_Symbol,
                          frac_mut=(maf.filtered@gene.summary$AlteredSamples/as.numeric(maf.filtered@summary$summary[3])),
-                         #mutation_count=maf.filtered@gene.summary$total + maf.filtered@gene.summary$CNV_total,
+                         mutation_count=maf.filtered@gene.summary$total + maf.filtered@gene.summary$CNV_total,
+                         #mutation_count=maf.filtered@gene.summary$total,#For SNV only
+                         #mutation_count=maf.filtered@gene.summary$CNV_total, #For CNV only
                          stringsAsFactors = F)
 
   #frac_mut <- frac_mut %>% dplyr::filter(!(Hugo_Symbol %in% c("HLA-A","HLA-B","HLA-C","HTR1D")))
-  frac_mut <- frac_mut %>% dplyr::filter(!(Hugo_Symbol %in% c("HLA-A","HLA-B","HLA-C")))
+  frac_mut <- frac_mut %>% dplyr::filter(!(Hugo_Symbol %in% c("HLA-A","HLA-B","HLA-C")) & (mutation_count > 1))
 
   target_frac = sort(frac_mut$frac_mut, decreasing = T)[min(ngene_max,nrow(frac_mut))]
   if (auto_adjust_threshold) {
@@ -104,7 +132,7 @@ make_oncoplot <- function(maf.filtered, cohort_freq_thresh = 0.01,ngene_max=25, 
   #frac_mut <- frac_mut[order(frac_mut$frac_mut,frac_mut$mutation_count,decreasing = T),]
   frac_mut <- frac_mut[order(frac_mut$frac_mut,decreasing = T),]
   freq_genes <- frac_mut$Hugo_Symbol[frac_mut$frac_mut >= cohort_freq_thresh]
-  freq_genes <- freq_genes[1:ngene_max]
+  freq_genes <- freq_genes[1:min(ngene_max,length(freq_genes))]
   if (length(freq_genes) == 0) {
     stop("No genes to plot; change the frequency threshold to include more genes.")
   }
@@ -185,7 +213,9 @@ make_oncoplot <- function(maf.filtered, cohort_freq_thresh = 0.01,ngene_max=25, 
       ###Make changes in the text for the annotation
       myanno <- HeatmapAnnotation(df=anno_data,col = clin_data_colors,
                                   annotation_name_gp =  gpar(fontsize = 14,fontface = 2),
-                                  annotation_legend_param = list(title_gp = gpar(fontsize = 14, fontface = 2),labels_gp = gpar(fontsize = 12)))
+                                  annotation_legend_param=list(labels_gp = gpar(fontsize = 14),title_gp = gpar(fontsize = 16, fontface = 2),
+                                                               nrow = 5,
+                                                               legend_direction = "vertical"))
     }
   }
 
@@ -229,7 +259,7 @@ make_oncoplot <- function(maf.filtered, cohort_freq_thresh = 0.01,ngene_max=25, 
                                  show_column_names = show_sample_names,
                                  alter_fun_is_vectorized = T,
                                  row_names_gp = gpar(fontsize = 14),
-                                 heatmap_legend_param = list(title = "Alterations",title_gp = gpar(fontsize = 14, fontface = 2),labels_gp = gpar(fontsize = 12)))#,
+                                 heatmap_legend_param = list(title = "Alterations",title_gp = gpar(fontsize = 16, fontface = 2),labels_gp = gpar(fontsize = 14)))#,
 
   draw(onco_base_default, show_annotation_legend = TRUE)
 
@@ -248,4 +278,47 @@ make_oncoplot <- function(maf.filtered, cohort_freq_thresh = 0.01,ngene_max=25, 
   ### Return the oncoplot (if function is pointed to a variable)
   invisible(onco_base_default)
 }
+
+# o1<-load(file = paste0("/Users/jaina13/myPART/WESData/Pipeliner_somaticpairs/merged_somatic/SNVsResults-new.rda"))
+# allMAFDF<-do.call(rbind,lapply(names(l), function(n){o<-l[[n]];o$Diagnosis<-n;return(o)}))
+# allMAFDF$UniqVar<-paste0(allMAFDF$chromosome,"-",allMAFDF$start,"-",allMAFDF$end,"-",allMAFDF$TranscriptChange,"-",allMAFDF$VariantType,"-",allMAFDF$Diagnosis)
+# mafPipelinerAllFilt<-allMAFDF
+getMAFDF<-function(l)
+{
+  allMAFDF<-do.call(rbind,lapply(names(l), function(n){o<-l[[n]];o$Diagnosis<-n;return(o)}))
+  allMAFDF$UniqVar<-paste0(allMAFDF$chromosome,"-",allMAFDF$start,"-",allMAFDF$end,"-",allMAFDF$TranscriptChange,"-",allMAFDF$VariantType,"-",allMAFDF$Diagnosis)
+  return(allMAFDF)
+}
+
+getMAFDFSample<-function(l1,RTCol=2)
+{
+  allMAFDF<-do.call(rbind,lapply(names(l1), function(n){o<-data.frame(l1[[n]]@data);o$Tumor_Sample_Barcode<-unlist(lapply(as.character(o$Tumor_Sample_Barcode), function(x){unlist(str_split(x,pattern = "_"))[RTCol]}));return(o)}))
+  allMAFDF$UniqVar<-paste0(allMAFDF$Chromosome,"-",allMAFDF$Start_Position,"-",allMAFDF$End_Position,"-",allMAFDF$Transcript_Change,"-",allMAFDF$Variant_Type,"-",allMAFDF$Tumor_Sample_Barcode)
+  return(allMAFDF)
+}
+
+o1<-load(file = paste0("/Users/jaina13/myPART/WESData/Pipeliner_somaticpairs/merged_somatic/SNVsResults-new-FilterNCall2.rda"))
+mafPipelinerN2Filt<-getMAFDFSample(l1,RTCol = 3)
+o1<-load(file = paste0("/Users/jaina13/myPART/WESData/Pipeliner_somaticpairs/merged_somatic/SNVsResults-new-FilterMutect2.rda"))
+mafPipelinerMutect2Filt<-getMAFDFSample(l1,RTCol = 3)
+
+
+o1<-load(file = paste0("/Users/jaina13/myPART/WESData/new-exome-pipeline-results/sobdetector/maf/SNVsResults-consensus.rda"))
+mafFFPEN2Filt<-getMAFDFSample(l1)
+o1<-load(file = paste0("/Users/jaina13/myPART/WESData/new-exome-pipeline-results/sobdetector/maf/SNVsResults-mutect2.rda"))
+mafFFPEMutect2Filt<-getMAFDFSample(l1)
+
+
+o1<-load(file = paste0("/Users/jaina13/myPART/WESData/new-exome-pipeline-results/merged_somatic_variants/maf/SNVsResults-consensous.rda"))
+mafN2Filt<-getMAFDFSample(l1)
+o1<-load(file = paste0("/Users/jaina13/myPART/WESData/new-exome-pipeline-results/merged_somatic_variants/maf/SNVsResults-mutect2.rda"))
+mafMutect2Filt<-getMAFDFSample(l1)
+
+
+# install.packages("ggVennDiagram")
+library(ggVennDiagram)
+x <- list(mafPipelinerN2Filt= mafPipelinerN2Filt$UniqVar, mafPipelinerMutect2Filt = mafPipelinerMutect2Filt$UniqVar, mafN2Filt = mafN2Filt$UniqVar, mafMutect2Filt = mafMutect2Filt$UniqVar)
+x <- list(mafPipelinerMutect2Filt = mafPipelinerMutect2Filt$UniqVar, mafMutect2Filt = mafMutect2Filt$UniqVar)
+x <- list(mafFFPEN2Filt = mafFFPEN2Filt$UniqVar, mafN2Filt = mafN2Filt$UniqVar)
+ggVennDiagram(x)
 
