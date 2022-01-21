@@ -16,6 +16,11 @@ raceColor<-c("White"="#B35806","Unknown"="#FDBC6B","Other"="black","Black or Afr
 getAgeColor<-function(ageVector){colorRamp2(c(0,max(ageVector,na.rm = T)), c("white","blue"))}
 getTMB500Color<-function(TMBValues){colorRamp2(c(0,max(TMBValues,na.rm = T)), c("white","red"))}
 
+diagnosisShortNames <- c("ACC","ATC","MTC","NET","NET-SI","NET-pancreas","NET-lung","PTC","PCC","Normal")
+names(diagnosisShortNames)<-c("Adrenocortical carcinoma","Anaplastic thyroid carcinoma","Medullary thyroid carcinoma","Neuroendocrine","Neuroendocrine-small intestine","Neuroendocrine-pancreas","Neuroendocrine-lung","Papillary thyroid carcinoma","Pheochromocytoma","Normal")
+
+diagnosisColorRNASeqShort <- c("#78DD9E","#A54EE1","#D2B4C8","#D7815D","#87D2DC","#BCE25A","#D5DAA9","#DC6DBF","#8688D5","#D7815D")
+names(diagnosisColorRNASeqShort)<-c("ACC","ATC","MTC","NET-SI","NET-pancreas","NET-lung","PTC","PCC","Normal","NET")
 
 ### Creates matrix for oncoplot from maf file
 ### Adapted from maftools: https://github.com/PoisonAlien/maftools/blob/master/R/oncomatrix.R
