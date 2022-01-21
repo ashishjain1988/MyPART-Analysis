@@ -1,6 +1,8 @@
 library(stringr)
 library(maftools)
 
+source("~/myPART/MyPART-Analysis/RScripts/helperFunctions.R")
+source("~/myPART/MyPART-Analysis/RScripts/Figure3A-helper.R")
 ###########Figure 3A##################
 mywd="/Users/jaina13/myPART/WGSData/CNVs/DriverGenes/"
 o<-load(file = paste0(mywd,"driverGenesByCancer.rda"))
@@ -44,6 +46,7 @@ featuresFilt$PrimaryLocation<-tools::toTitleCase(featuresFilt$Location.of.Primar
 featuresFilt$Tissue<-tools::toTitleCase(featuresFilt$`anatomical.location.-.MyPART.Tumor.Pathologies`)
 featuresFilt$SampleType<-tools::toTitleCase(featuresFilt$`sample.type.-.MyPART.Tumor.Pathologies`)
 featuresFilt$Age<-featuresFilt$`age.at.sample.collection.-.Path.Rpt`
+featuresFilt$`cancer/tumor.name.-.MyPART.Tumor.Pathologies`<-diagnosisShortNames[featuresFilt$`cancer/tumor.name.-.MyPART.Tumor.Pathologies`]
 
 # featuresFilt %>% dplyr::group_by_at(vars(`cancer/tumor.name.-.MyPART.Tumor.Pathologies`)) %>% dplyr::summarize(gene=unique(`Hugo Symbol`),chromosome=unique(Chromosome),start=unique(`Start Position`),end=unique(`End Position`),
 #                                                                                  VariantType =paste(unique(`Variant Type`),collapse = ","),
@@ -52,15 +55,14 @@ featuresFilt$Age<-featuresFilt$`age.at.sample.collection.-.Path.Rpt`
 #                                                                                  EffectPredictionPolyPhen=paste(unique(`Effect Prediction - PolyPhen`),collapse = ","),ClinVar=paste(unique(`Known Effects ClinVar`),collapse = ","),
 #                                                                                  Sample = paste(`Sample ID`,collapse = ","),NumberOfSamples = dplyr::n()) %>% arrange(desc(NumberOfSamples))
 
-lapply(unique(featuresFilt$New.Diagnosis),function(x){
-  f <- featuresFilt[featuresFilt$New.Diagnosis == x,]
-  print(x)
-  print(table(f$Race))
-  #print(sd(as.numeric(f$Age),na.rm=TRUE))
-})
-
-#maf.plus.cn = read.maf(maf = wesSNVs@data[ wesSNVs@data$Hugo_Symbol== "HTR1D",],cnTable = custom.cn.data,clinicalData = featuresFilt,verbose = FALSE)
-maf.plus.cn = read.maf(maf = wesSNVs@data,clinicalData = featuresFilt,verbose = FALSE)
+# lapply(unique(featuresFilt$New.Diagnosis),function(x){
+#   f <- featuresFilt[featuresFilt$New.Diagnosis == x,]
+#   print(x)
+#   print(table(f$Race))
+#   #print(sd(as.numeric(f$Age),na.rm=TRUE))
+# })
+maf.plus.cn = read.maf(maf = wesSNVs@data[ wesSNVs@data$Hugo_Symbol== "HTR1D",],cnTable = custom.cn.data,clinicalData = featuresFilt,verbose = FALSE)
+#maf.plus.cn = read.maf(maf = wesSNVs@data,clinicalData = featuresFilt,verbose = FALSE)
 #maf.plus.cn = read.maf(maf = wesSNVs@data,cnTable = custom.cn.data,clinicalData = featuresFilt,verbose = FALSE)
 
 # summary<-maf.plus.cn@gene.summary
@@ -88,7 +90,8 @@ sample_annotation_data<-maf.plus.cn@clinical.data[,c("Tumor_Sample_Barcode","can
 colnames(sample_annotation_data)<-c("Tumor_Sample_Barcode","Diagnosis","SampleType","Tissue","Age")
 sample_annotation_data$Age <-as.numeric(sample_annotation_data$Age)
 #sample_annotation_data$TMB_TSO500<-as.numeric(sample_annotation_data$TMB_TSO500)
-sample_annotation_colors <- list(Diagnosis=diagnosisColorDNASeq[sample_annotation_data$Diagnosis],SampleType=tumorSiteColor[sample_annotation_data$SampleType],Tissue=tissueColorDNASeq[sample_annotation_data$Tissue],Age=getAgeColor(sample_annotation_data$Age))#,TMB_TSO500 = getTMB500Color((sample_annotation_data$TMB_TSO500)))#get_clinical_colors(sample_annotation_data)
+#sample_annotation_data$Diagnosis <- diagnosisShortNames[sample_annotation_data$Diagnosis]
+sample_annotation_colors <- list(Diagnosis=diagnosisColorRNASeqShort[sample_annotation_data$Diagnosis],SampleType=tumorSiteColor[sample_annotation_data$SampleType],Tissue=tissueColorDNASeq[sample_annotation_data$Tissue],Age=getAgeColor(sample_annotation_data$Age))#,TMB_TSO500 = getTMB500Color((sample_annotation_data$TMB_TSO500)))#get_clinical_colors(sample_annotation_data)
 # sample_annotation_data<-maf.plus.cn@clinical.data[,c("Tumor_Sample_Barcode","cancer/tumor.name.-.MyPART.Tumor.Pathologies","SampleType","Tissue","Age")]
 # colnames(sample_annotation_data)<-c("Tumor_Sample_Barcode","Diagnosis","SampleType","Tissue","Age")
 # sample_annotation_data$Age <-as.numeric(sample_annotation_data$Age)
@@ -108,7 +111,13 @@ make_oncoplot <- function(maf.filtered, cohort_freq_thresh = 0.01,ngene_max=25, 
                           clin_data=NULL, clin_data_colors=NULL,
                           savename=NULL) {
 
+
+
+  # variant_type_colors <- c("Amp"="green2",
+  #                          "Del"="darkred")
+  # variant_types <- names(variant_type_colors)
   maf.filtered = maf.plus.cn
+  #maf.filtered<-read.maf(data.frame(maf.filtered@data),vc_nonSyn = variant_types)
   clin_data=sample_annotation_data
   clin_data_colors=sample_annotation_colors
   cohort_freq_thresh = 0.01
@@ -123,11 +132,11 @@ make_oncoplot <- function(maf.filtered, cohort_freq_thresh = 0.01,ngene_max=25, 
   frac_mut <- data.frame(Hugo_Symbol=maf.filtered@gene.summary$Hugo_Symbol,
                          frac_mut=(maf.filtered@gene.summary$AlteredSamples/as.numeric(maf.filtered@summary$summary[3])),
                          #mutation_count=maf.filtered@gene.summary$total + maf.filtered@gene.summary$CNV_total,
-                         mutation_count=maf.filtered@gene.summary$total,#For SNV only
-                         #mutation_count=maf.filtered@gene.summary$CNV_total, #For CNV only
+                         #mutation_count=maf.filtered@gene.summary$total,#For SNV only
+                         mutation_count=maf.filtered@gene.summary$CNV_total, #For CNV only
                          stringsAsFactors = F)
 
-  #frac_mut <- frac_mut %>% dplyr::filter(!(Hugo_Symbol %in% c("HLA-A","HLA-B","HLA-C","HTR1D")))
+  frac_mut <- frac_mut %>% dplyr::filter(!(Hugo_Symbol %in% c("HLA-A","HLA-B","HLA-C","HTR1D")))
   frac_mut <- frac_mut %>% dplyr::filter(!(Hugo_Symbol %in% c("HLA-A","HLA-B","HLA-C")) & (mutation_count > 1))
 
   target_frac = sort(frac_mut$frac_mut, decreasing = T)[min(ngene_max,nrow(frac_mut))]
@@ -218,9 +227,9 @@ make_oncoplot <- function(maf.filtered, cohort_freq_thresh = 0.01,ngene_max=25, 
     if (ncol(anno_data) > 0) {
       ###Make changes in the text for the annotation
       myanno <- HeatmapAnnotation(df=anno_data,col = clin_data_colors,
-                                  annotation_name_gp =  gpar(fontsize = 14,fontface = 2),
-                                  annotation_legend_param=list(labels_gp = gpar(fontsize = 14),title_gp = gpar(fontsize = 16, fontface = 2),
-                                                               nrow = 6,
+                                  annotation_name_gp =  gpar(fontsize = 16,fontface = 2),
+                                  annotation_legend_param=list(labels_gp = gpar(fontsize = 16),title_gp = gpar(fontsize = 18, fontface = 2),
+                                                               nrow = 8,
                                                                legend_direction = "vertical"))
     }
   }
@@ -233,16 +242,19 @@ make_oncoplot <- function(maf.filtered, cohort_freq_thresh = 0.01,ngene_max=25, 
   variant_type_data <- variant_type_data[,!names(variant_type_data)%in%c("Tumor Sample Barcode","total","CNV total")]
   variant_type_data <- variant_type_data[match(colnames(oncomat.plot), rownames(variant_type_data)),
                                          rev(order(colSums(variant_type_data)))]
+  ##Only for the CNV only plot
+  variant_type_data <- variant_type_data[,1:2]
+
   # browser()
   var_anno_colors <- mutation_colors[match(colnames(variant_type_data), names(mutation_colors))]
   ###Make changes in the text/data for the top mutation histogram
-  top_ha = HeatmapAnnotation("Total\nMutations" = anno_barplot(variant_type_data, gp = gpar(fill = var_anno_colors), border = F),
-                             annotation_name_side = "left",annotation_name_rot=90,annotation_name_gp = gpar(fontsize = 12),height = unit(4, "cm"))
+  top_ha = HeatmapAnnotation("Total\nMutations" = anno_barplot(variant_type_data, gp = gpar(fill = var_anno_colors),axis_param = list(gp=gpar(fontsize = 14)), border = F),
+                             annotation_name_side = "left",annotation_name_rot=90,annotation_name_gp = gpar(fontsize = 16),height = unit(4, "cm"))
 
   # browser()
 
   pct_anno <- paste0(prettyNum(frac_mut$frac_mut[match(onco_genes, frac_mut$Hugo_Symbol)]*100,digits=1),"%")
-  left_ha = rowAnnotation("Cohort Pct"=anno_text(pct_anno,gp = gpar(fontsize = 12)), show_annotation_name=F)
+  left_ha = rowAnnotation("Cohort Pct"=anno_text(pct_anno,gp = gpar(fontsize = 16)), show_annotation_name=F)
   # print(oncomat.plot)
   ### Make the oncoplot
   # alter_fun$Deletion<-function(x, y, w, h) {
@@ -262,17 +274,18 @@ make_oncoplot <- function(maf.filtered, cohort_freq_thresh = 0.01,ngene_max=25, 
                                  bottom_annotation = myanno,
                                  top_annotation = top_ha,
                                  left_annotation = left_ha,
+                                 right_annotation = rowAnnotation(rbar = anno_oncoprint_barplot(axis_param = list(gp=gpar(fontsize = 14),side = "top",labels_rot = 0))),
                                  show_column_names = show_sample_names,
                                  alter_fun_is_vectorized = T,
-                                 row_names_gp = gpar(fontsize = 14),
-                                 heatmap_legend_param = list(title = "Alterations",title_gp = gpar(fontsize = 16, fontface = 2),labels_gp = gpar(fontsize = 14)),
-                                 show_heatmap_legend = FALSE)#,
+                                 row_names_gp = gpar(fontsize = 16),
+                                 heatmap_legend_param = list(title = "Alterations",title_gp = gpar(fontsize = 18, fontface = 2),labels_gp = gpar(fontsize = 16)),
+                                 show_heatmap_legend = TRUE)#,
 
   #draw(onco_base_default, show_annotation_legend = TRUE)
 
-  pdf(paste0("/Users/jaina13/myPART/WESData/new-exome-pipeline-results/merged_somatic_variants/maf-new/","SNVs-consensus-new.pdf"),width = 10,height = 12)
+  pdf(paste0("/Users/jaina13/myPART/WESData/new-exome-pipeline-results/merged_somatic_variants/maf-new/","SNVs-consensus-cnv.pdf"),width = 14,height = 12)
   #ComplexHeatmap::draw(g, show_annotation_legend = TRUE)
-  draw(onco_base_default, show_annotation_legend = FALSE)
+  draw(onco_base_default, show_annotation_legend = TRUE)
   dev.off()
 
 
